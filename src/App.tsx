@@ -18,7 +18,10 @@ import {
   Map,
   PanelRightOpen,
   PanelRightClose,
+  Play,
 } from "lucide-react";
+import { useAutoDemo, DemoOverlay } from "./AutoDemo";
+import { FaqChatbot } from "./FaqChatbot";
 
 type Page = "welcome" | "retirement-calc" | "sim-guide" | "ebook2" | "ebook3" | "author";
 
@@ -45,6 +48,7 @@ export default function App() {
   const [triggerRecalc, setTriggerRecalc] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const [fontSizeOffset, setFontSizeOffset] = useState(2);
+  const [showDemoBanner, setShowDemoBanner] = useState(!localStorage.getItem("demo-banner-dismissed"));
   const mainRef = useRef<HTMLDivElement>(null);
 
   const handleMainScroll = useCallback(() => {
@@ -117,6 +121,16 @@ export default function App() {
   };
 
   const greeting = getGreetingIcon();
+
+  const { isRunning: isDemoRunning, startDemo, stopDemo, demoState, speed: demoSpeed, setSpeed: setDemoSpeed } = useAutoDemo(() => {
+    // 데모 완료 시 처리
+  });
+
+  const handleStartDemo = () => {
+    setCurrentPage("retirement-calc");
+    setTimeout(() => startDemo(), 500);
+  };
+
 
   const handleSimulationComplete = (data?: { results: any[]; isFireSuccess: boolean; assetDepletionAge: number | null; inputs?: any }) => {
     if (data && data.results.length > 0) {
@@ -297,6 +311,31 @@ export default function App() {
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Left: Header + Content */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+
+        {/* 데모 배너 — 헤더 위 고정 띠 */}
+        {showDemoBanner && currentPage === "retirement-calc" && !isDemoRunning && (
+          <div
+            id="demo-banner"
+            onClick={handleStartDemo}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              padding: "8px 40px 8px 20px", flexShrink: 0,
+              background: "#1e293b", cursor: "pointer",
+              position: "relative",
+            }}
+          >
+            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>처음이신가요?</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#fff", display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 12px", background: "rgba(255,255,255,0.15)", borderRadius: 6 }}>
+              ▶ 데모 보기
+            </span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>1분 안에 사용법을 알려드려요</span>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowDemoBanner(false); localStorage.setItem("demo-banner-dismissed", "1"); }}
+              style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", fontSize: 18, padding: 4, lineHeight: 1 }}
+            >×</button>
+          </div>
+        )}
+
         {/* Header */}
         <header
           style={{
@@ -440,6 +479,8 @@ export default function App() {
           )}
         </div>
       </div>
+      <FaqChatbot hidden={isDemoRunning || (showActionPanel && simResults.length > 0)} />
+      {isDemoRunning && <DemoOverlay demoState={demoState} onStop={stopDemo} speed={demoSpeed} onSpeedChange={setDemoSpeed} />}
     </div>
   );
 }

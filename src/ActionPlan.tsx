@@ -1,6 +1,43 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Wallet, TrendingUp, Clock, RefreshCw, Target, Info, X } from "lucide-react";
 import { isAdmin } from "./PasswordGate2";
+
+function PlanTooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  const [tipStyle, setTipStyle] = useState<React.CSSProperties>({});
+  const [arrowStyle, setArrowStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLSpanElement>(null);
+  const handleEnter = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const tipWidth = Math.min(260, window.innerWidth * 0.9);
+    let left = rect.left + rect.width / 2 - tipWidth / 2;
+    if (left < 8) left = 8;
+    if (left + tipWidth > window.innerWidth - 8) left = window.innerWidth - 8 - tipWidth;
+    const arrowLeft = rect.left + rect.width / 2 - left - 6;
+    setTipStyle({
+      position: 'fixed', bottom: window.innerHeight - rect.top + 8, left, width: tipWidth,
+      padding: '12px 16px', borderRadius: 10, background: '#fff', color: 'var(--text-primary)',
+      fontSize: 13, fontWeight: 500, lineHeight: 1.8, textAlign: 'left' as const, whiteSpace: 'normal',
+      boxShadow: '0 6px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', zIndex: 10000, pointerEvents: 'none' as const,
+    });
+    setArrowStyle({
+      position: 'absolute' as const, bottom: -6, left: Math.max(12, Math.min(arrowLeft, tipWidth - 20)),
+      width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+      borderTop: '6px solid #fff',
+    });
+    setShow(true);
+  };
+  return (
+    <span ref={triggerRef} onMouseEnter={handleEnter} onMouseLeave={() => setShow(false)}
+      onClick={(e) => { e.stopPropagation(); show ? setShow(false) : handleEnter(); }}
+      style={{ cursor: 'help', display: 'inline-flex', alignItems: 'center' }}>
+      {children}
+      {show && createPortal(<div style={tipStyle}>{text}<div style={arrowStyle} /></div>, document.body)}
+    </span>
+  );
+}
 
 interface SimulationRow {
   year: number;
@@ -76,6 +113,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
   const [checkedStrategies, setCheckedStrategies] = useState<Set<string>>(new Set());
   const [showDevNote, setShowDevNote] = useState(false);
   const [filledAccounts, setFilledAccounts] = useState<Record<string, number>>({});
+  const [dragAmounts, setDragAmounts] = useState<Record<string, number>>({});
   // phase: 0=초기(아무것도 안 보임), 1=즉시탈출 직후(앞당기기+채우기+여유 모두 표시), 2=재계산 후(채우기만), 3=채우기 재계산 후(모두 숨김)
   const [solutionPhase, setSolutionPhase] = useState(0);
   const prevResultsRef = useRef(results);
@@ -137,32 +175,38 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       savings: { target: targetSavings, current: firstRow.savingsBalance, label: "예적금" },
     };
 
-    // 최대 허용 생활비 역산: 가장 적은 잉여 연도 기준
-    // minSurplus가 양수면 그만큼 생활비를 더 쓸 수 있음
-    const minYearlySurplus = minSurplusRow.yearlySurplus;
-    // 안전마진 30% 적용, 10만원 단위 내림
-    const maxAdditionalMonthly = minYearlySurplus > 0
-      ? Math.floor(minYearlySurplus * 0.7 / 12 / 100000) * 100000
-      : 0;
+    // === 여유분 배분: 총 잉여의 50%만 활용 ===
+    const safeBudget = Math.max(0, totalSurplus * 0.5);
     const currentMonthly = planInputs?.monthlyLivingCostBefore75 ?? 0;
+    const currentRetireAge = planInputs?.retirementStartAge ?? firstRow.age;
+    const simYears = results.length;
+    const avgReturnRate = 0.04; // 평균 자산 수익률 가정 (4%)
+
+    // 생활비 증가 역산: 월 X원 늘리면 → 연간 X*12원 추가지출 × 시뮬기간
+    // + 복리 감소분: 늘린 만큼 자산이 덜 굴려지므로 복리 손실 반영
+    // 복리 승수: 매년 추가지출이 수익률로 불어났을 금액의 합
+    // = Σ(1+r)^(simYears-k) for k=1..simYears ≈ ((1+r)^n - 1) / r
+    const compoundMultiplier = avgReturnRate > 0
+      ? (Math.pow(1 + avgReturnRate, simYears) - 1) / avgReturnRate
+      : simYears;
+    // 월 추가금액 = safeBudget / (연간지출승수)
+    // 연간지출승수 = 12 * compoundMultiplier (복리 손실 포함)
+    const maxAdditionalMonthly = safeBudget > 0
+      ? Math.floor(safeBudget / (12 * compoundMultiplier) / 100000) * 100000
+      : 0;
     const maxAllowedMonthly = currentMonthly + maxAdditionalMonthly;
 
-    // 은퇴 나이 앞당기기 역산
-    // 1년 앞당기면: 추가 생활비 1년분 + 소득 공백 1년 늘어남 + 자산 운용 기간 1년 늘어남
-    // 보수적 계산: 최소 잉여 연도 기준, 앞당긴 기간 × 첫해 생활비로 감당 가능한지
-    const currentRetireAge = planInputs?.retirementStartAge ?? firstRow.age;
-    const firstYearLivingCost = firstRow.livingCost;
-    // 총 잉여에서 최소 잉여 연도의 안전마진을 뺀 순수 여유분
-    // n년 앞당기면: n년분 생활비 추가 + n년간 소득공백 + 자산 축적 기간 단축
-    // 보수적 공식: n년 앞당기는 비용 = n × (n+1) / 2 × 연생활비 (누적 복리 효과)
-    // 즉 1년=1배, 2년=3배, 3년=6배, 4년=10배... 로 비용이 급증
-    const safeTotal = Math.max(0, totalSurplus * 0.5); // 총 잉여의 50%만 사용
+    // 은퇴 앞당기기 역산: n년 앞당기면
+    // 비용 = n년분 추가 생활비 + 복리 손실 (n년간 자산이 굴려지지 않음)
+    // 1년 앞당기기 비용 = 연생활비 × (1+r)^(simYears) (복리 기회비용 포함)
     let earlyRetireYears = 0;
     let cumulativeCost = 0;
-    const maxEarly = Math.min(5, currentRetireAge - (planInputs?.currentAge ?? 35) - 5); // 최대 5년, 현재나이+5년은 남김
+    const maxEarly = Math.min(5, currentRetireAge - (planInputs?.currentAge ?? 35) - 5);
     for (let n = 1; n <= maxEarly; n++) {
-      cumulativeCost += avgLivingCost * n; // 누적 비용이 가속
-      if (cumulativeCost <= safeTotal) {
+      // n번째 해 앞당기기 비용: 생활비 + 그 금액이 복리로 굴려졌을 기회비용
+      const yearlyCostWithCompound = avgLivingCost * Math.pow(1 + avgReturnRate, simYears - n + 1);
+      cumulativeCost += yearlyCostWithCompound;
+      if (cumulativeCost <= safeBudget) {
         earlyRetireYears = n;
       } else {
         break;
@@ -579,7 +623,6 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                   ? `${planInputs.nationalPensionStartAge}세부터 국민연금이 매년 ${formatKorean(planInputs.nationalPensionYearly)}씩 들어오고, `
                   : `국민연금이 매년 ${formatKorean(planInputs.nationalPensionYearly)}씩 뒷받침해주고, `}
                 퇴직연금과 개인연금이 빈 자리를 채워주기 때문에 {planInputs.simulationEndAge}세까지 매년 현금흐름이 플러스를 유지합니다.
-                {analysis.totalSurplus > 0 && ` 최종적으로 ${formatKorean(analysis.totalSurplus)}이 남습니다.`}
               </p>
             ) : analysis ? (
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, margin: 0, wordBreak: "keep-all" as const }}>
@@ -599,7 +642,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
         </div>
 
         {/* 하단 지표 */}
-        {analysis && (
+        {analysis && !isFireSuccess && (
           <div className="result-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 0 }}>
             <div style={{
               padding: "16px 12px",
@@ -634,9 +677,37 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
             {(() => {
               const orig = originalInputs;
               const changed = (origVal: any, newVal: any) => orig && origVal !== newVal;
+              const retireChanged = changed(orig?.retirementStartAge, planInputs.retirementStartAge);
+              const costChanged = changed(orig?.monthlyLivingCostBefore75, planInputs.monthlyLivingCostBefore75);
+              const pensionChanged = changed(orig?.nationalPensionStartAge, planInputs.nationalPensionStartAge);
+              const tooltips: Record<string, string> = {
+                "은퇴 시작": retireChanged
+                  ? `은퇴 시기를 ${orig!.retirementStartAge}세에서 ${planInputs.retirementStartAge}세로 늦추면, 자산이 수익률로 ${planInputs.retirementStartAge - orig!.retirementStartAge}년 더 불어나고 생활비 지출 기간이 줄어듭니다. 국민연금 수령까지 공백 기간도 짧아져 자산 소진 위험이 크게 줄어요.`
+                  : "은퇴 나이를 늦추면 ① 자산이 더 오래 불어나고 ② 생활비 기간이 줄고 ③ 국민연금 수령까지 공백이 짧아져요.",
+                "월 생활비": costChanged
+                  ? `월 생활비를 ${formatAmount(orig!.monthlyLivingCostBefore75)}원에서 ${formatAmount(planInputs.monthlyLivingCostBefore75)}원으로 줄이면, 연간 ${formatAmount((orig!.monthlyLivingCostBefore75 - planInputs.monthlyLivingCostBefore75) * 12)}원이 절감됩니다. 이 금액이 매년 쌓이면 은퇴 기간 전체로는 수억 원의 차이를 만들어요.`
+                  : "생활비는 현재 가치 기준이며 물가상승률이 자동 반영됩니다.",
+                "국민연금": pensionChanged
+                  ? `국민연금 수령을 ${orig!.nationalPensionStartAge}세에서 ${planInputs.nationalPensionStartAge}세로 조정했습니다. ${planInputs.nationalPensionStartAge > 65 ? `연기수령은 1년당 7.2% 증액되어 더 많은 연금을 종신으로 받을 수 있어요.` : planInputs.nationalPensionStartAge < 65 ? `조기수령은 1년당 6% 감액되지만, 소득 공백기를 줄여 자산 소진을 막아줍니다.` : `정상 수령 시점입니다.`}`
+                  : "국민연금은 물가상승률이 반영되는 종신연금입니다. 수령 시점이 은퇴 전략의 핵심이에요.",
+                "연금 인출": planInputs.usePensionDepletion
+                  ? "매년 균등하게 나눠 인출하여 종료 시점에 잔액이 0원이 됩니다. 자산을 남김없이 활용하는 전략이에요."
+                  : "부족분만 꺼내 쓰므로 잔액이 최대한 유지됩니다. 연금소득 연 1,500만원 이하 시 분리과세로 절세할 수 있어요.",
+                "시뮬 기간": `${planInputs.retirementStartAge}세부터 ${planInputs.simulationEndAge}세까지 ${analysis.simulationYears}년간 매년 현금흐름을 계산합니다. 이 기간 동안 자산이 유지되면 성공이에요.`,
+                "부채": "은퇴 시점의 부채는 매년 원리금 상환으로 현금흐름을 압박합니다. 가능하면 은퇴 전 상환이 유리해요.",
+              };
+              // 은퇴 시작 값에 앞당기기 가능 정보 포함
+              const retireValue = analysis.earlyRetireYears > 0
+                ? `${planInputs.retirementStartAge}세 (${analysis.earliestRetireAge}세까지 가능)`
+                : `${planInputs.retirementStartAge}세 (${planInputs.startYear}년)`;
+              // 월 생활비 값에 증가 가능 정보 포함
+              const maxMonthly = (planInputs.monthlyLivingCostBefore75 ?? 0) + analysis.maxAdditionalMonthly;
+              const costValue = analysis.maxAdditionalMonthly >= 100000
+                ? `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 (${formatAmount(maxMonthly)}원까지 가능)`
+                : `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 / 75세 이후 ${formatAmount(planInputs.monthlyLivingCostAfter75)}원`;
               return [
-                { label: "은퇴 시작", value: `${planInputs.retirementStartAge}세 (${planInputs.startYear}년)`, prev: changed(orig?.retirementStartAge, planInputs.retirementStartAge) ? `${orig!.retirementStartAge}세` : null },
-                { label: "월 생활비", value: `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 / 75세 이후 ${formatAmount(planInputs.monthlyLivingCostAfter75)}원`, prev: changed(orig?.monthlyLivingCostBefore75, planInputs.monthlyLivingCostBefore75) ? `${formatAmount(orig!.monthlyLivingCostBefore75)}원` : null },
+                { label: "은퇴 시작", value: retireValue, prev: changed(orig?.retirementStartAge, planInputs.retirementStartAge) ? `${orig!.retirementStartAge}세` : null },
+                { label: "월 생활비", value: costValue, prev: changed(orig?.monthlyLivingCostBefore75, planInputs.monthlyLivingCostBefore75) ? `${formatAmount(orig!.monthlyLivingCostBefore75)}원` : null },
                 { label: "국민연금", value: `${planInputs.nationalPensionStartAge}세부터 연 ${formatAmount(planInputs.nationalPensionYearly)}원`, prev: changed(orig?.nationalPensionStartAge, planInputs.nationalPensionStartAge) ? `${orig!.nationalPensionStartAge}세` : null },
                 { label: "연금 인출", value: planInputs.usePensionDepletion ? "매년 고르게 나눠 쓰기" : "필요할 때만 꺼내 쓰기", prev: null },
                 { label: "시뮬 기간", value: `${analysis.simulationYears}년 (${planInputs.retirementStartAge}~${planInputs.simulationEndAge}세)`, prev: null },
@@ -644,7 +715,11 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               ].map((item, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1.5 }}>
                   <span style={{ color: "#00b1bb", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
-                  <span style={{ color: "var(--text-tertiary)", minWidth: 65, flexShrink: 0 }}>{item.label}</span>
+                  <span style={{ color: "var(--text-tertiary)", minWidth: 65, flexShrink: 0 }}>
+                    {tooltips[item.label] ? (
+                      <PlanTooltip text={tooltips[item.label]}>{item.label} <Info size={11} style={{ opacity: 0.5, verticalAlign: "middle" }} /></PlanTooltip>
+                    ) : item.label}
+                  </span>
                   {item.prev ? (
                     <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>{item.prev}</span>
@@ -668,9 +743,6 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 planInputs.nationalPensionStartAge > planInputs.retirementStartAge
                   ? `국민연금 수령 전(${planInputs.retirementStartAge}~${planInputs.nationalPensionStartAge - 1}세) ${planInputs.nationalPensionStartAge - planInputs.retirementStartAge}년이 관건`
                   : `국민연금이 은퇴 초기부터 현금흐름을 뒷받침합니다`,
-                analysis.totalSurplus >= 0
-                  ? `${planInputs?.simulationEndAge ?? 90}세까지 남는 금액: ${formatKorean(analysis.totalSurplus)}`
-                  : `월 ${formatAmount(planInputs?.monthlyLivingCostBefore75 ?? 0)}원 기준, ${planInputs?.simulationEndAge ?? 90}세까지 부족한 금액: ${formatKorean(Math.abs(analysis.totalSurplus))}`,
               ].map((text, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--text-tertiary)", flexShrink: 0 }}>&#8226;</span>
@@ -680,72 +752,38 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
             </div>
           </div>
 
-          {/* 잉여금 활용 옵션 (성공이고 여유가 있을 때) */}
-          {isFireSuccess && (analysis.maxAdditionalMonthly >= 100000 || analysis.earlyRetireYears > 0) && (
-            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border-secondary)" }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8 }}>자산에 여유가 있어요. 어떻게 활용할까요?</p>
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
-                {analysis.earlyRetireYears > 0 && (
-                  <button
-                    onClick={() => {
-                      const changes: StrategyChange[] = [
-                        { field: 'retirementStartAge', value: 0, delta: -analysis.earlyRetireYears, label: `은퇴 -${analysis.earlyRetireYears}년` },
-                      ];
-                      onApplyStrategies?.(changes, false);
-                      setSolutionPhase(2);
-                      setTimeout(() => onRecalculate?.(), 100);
-                    }}
-                    style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
-                  >
-                    <div style={{ textAlign: "left" as const }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#6366f1", marginBottom: 2 }}>
-                        <Clock size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
-                        은퇴를 {analysis.earlyRetireYears}년 앞당길까요?
-                      </div>
-                      <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
-                        {analysis.earliestRetireAge}세에 탈출해도 자산이 유지됩니다
-                      </div>
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
-                  </button>
-                )}
-                {analysis.maxAdditionalMonthly >= 100000 && (
-                  <button
-                    onClick={() => {
-                      const additional = analysis.maxAdditionalMonthly;
-                      const newCost = (planInputs?.monthlyLivingCostBefore75 ?? 0) + additional;
-                      const changes: StrategyChange[] = [
-                        { field: 'monthlyLivingCostBefore75', value: 0, delta: additional, label: `생활비 +${Math.round(additional / 10000)}만원` },
-                        { field: 'monthlyLivingCostAfter75', value: 0, delta: Math.round(additional * 0.7), label: `75세 이후 자동 조정` },
-                      ];
-                      onApplyStrategies?.(changes, false);
-                      setSolutionPhase(2);
-                      setTimeout(() => onRecalculate?.(), 100);
-                    }}
-                    style={{ width: "100%", padding: "12px 16px", borderRadius: 8, border: "1px solid rgba(0,177,187,0.3)", background: "rgba(0,177,187,0.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between" }}
-                  >
-                    <div style={{ textAlign: "left" as const }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#00b1bb", marginBottom: 2 }}>
-                        <Wallet size={13} style={{ marginRight: 4, verticalAlign: "middle" }} />
-                        월 생활비를 {formatAmount(analysis.maxAdditionalMonthly)}원 늘려볼까요?
-                      </div>
-                      <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
-                        월 {formatAmount((planInputs?.monthlyLivingCostBefore75 ?? 0) + analysis.maxAdditionalMonthly)}원까지 안전합니다
-                      </div>
-                    </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00b1bb" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+
         </div>
       )}
 
+      {/* 전략 안내 + 반영 버튼 (채우기 전에만 표시) */}
+      {!isFireSuccess && Object.keys(filledAccounts).length === 0 && (
+        <div style={{ padding: "0 16px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ flex: 1 }} />
+          <button
+            className="apply-strategy-btn"
+            onClick={() => {
+              const allChanges: StrategyChange[] = [];
+              for (const s of scenarios) {
+                if (s.changes && s.changes.length > 0) {
+                  allChanges.push(...s.changes);
+                }
+              }
+              setSolutionPhase(1);
+              setFilledAccounts({});
+              onApplyStrategies?.(allChanges, true);
+            }}
+            className="apply-strategy-btn"
+            style={{ padding: "8px 16px", fontSize: 12, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", gap: 5 }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 제이의 전략으로 즉시 탈출하기
+          </button>
+        </div>
+      )}
 
-      {/* 계좌별 목표 잔액 (phase 1,2에서 표시) */}
-      {analysis && analysis.accountTargets && (solutionPhase === 1 || solutionPhase === 2) && (
-        <div style={{ margin: "0 16px 16px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)" }}>
+      {/* 계좌별 목표 잔액 (실패 시 표시) */}
+      {!isFireSuccess && analysis && analysis.accountTargets && (
+        <div style={{ margin: "0 16px 12px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
             <Target size={15} /> {planInputs?.retirementStartAge ?? 55}세 은퇴 시점, 계좌별 권장 잔액
           </div>
@@ -755,17 +793,12 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
             {Object.entries(analysis.accountTargets).filter(([, a]) => a.target > 0 || a.current > 0).map(([key, account]) => {
               const filledAmount = filledAccounts[key] ?? 0;
-              const adjustedCurrent = account.current + filledAmount;
+              const dragExtra = dragAmounts[key] ?? 0;
+              const adjustedCurrent = account.current + filledAmount + dragExtra;
               const diff = adjustedCurrent - account.target;
               const isEnough = diff >= 0;
               const percent = account.target > 0 ? Math.round((adjustedCurrent / account.target) * 100) : 100;
-              const fieldMap: Record<string, string> = {
-                pension: 'pensionBalance',
-                isa: 'isaBalance',
-                overseas: 'overseasBalance',
-                savings: 'savingsBalance',
-              };
-              const gap = Math.abs(diff);
+              const gap = Math.max(0, account.target - (account.current + filledAmount));
               const isFilled = key in filledAccounts;
               return (
                 <div key={key} style={{ padding: "10px 12px", borderRadius: 8, background: isFilled ? "rgba(0,177,187,0.06)" : "var(--bg-secondary)", border: isFilled ? "1px solid rgba(0,177,187,0.3)" : "1px solid transparent" }}>
@@ -800,32 +833,31 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                             취소
                           </button>
                         </div>
-                      ) : (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: isEnough ? "#00b1bb" : "var(--color-error)" }}>
-                          {isEnough ? "달성" : `${formatKorean(gap)} 부족`}
-                        </span>
-                      )}
-                      {!isEnough && isFireSuccess && !isFilled && (
+                      ) : isEnough ? (
+                        <span style={{ fontSize: 12, fontWeight: 600, color: "#00b1bb" }}>달성</span>
+                      ) : null}
+                      {!isEnough && !isFilled && (
                         <button
                           onClick={() => {
+                            const amount = dragExtra > 0 ? dragExtra : gap;
                             const changes: StrategyChange[] = [];
-                            let filledAmount = gap;
+                            let filledAmt = amount;
                             if (key === 'pension') {
-                              changes.push({ field: 'totalPension', value: 0, delta: gap, label: `연금 +${formatKorean(gap)}` });
+                              changes.push({ field: 'totalPension', value: 0, delta: amount, label: `연금 +${formatKorean(amount)}` });
                             } else if (key === 'isa') {
                               const isaMax = 100000000;
-                              const isaGap = Math.min(gap, Math.max(0, isaMax - account.current));
-                              filledAmount = isaGap;
+                              const isaGap = Math.min(amount, Math.max(0, isaMax - account.current));
+                              filledAmt = isaGap;
                               if (isaGap > 0) changes.push({ field: 'husbandISA', value: 0, delta: isaGap, label: `ISA +${formatKorean(isaGap)}` });
                             } else if (key === 'overseas') {
-                              changes.push({ field: 'overseasInvestmentAmount', value: 0, delta: gap, label: `해외직투 +${formatKorean(gap)}` });
+                              changes.push({ field: 'overseasInvestmentAmount', value: 0, delta: amount, label: `해외직투 +${formatKorean(amount)}` });
                             } else if (key === 'savings') {
-                              changes.push({ field: 'savingsAmount', value: 0, delta: gap, label: `예적금 +${formatKorean(gap)}` });
+                              changes.push({ field: 'savingsAmount', value: 0, delta: amount, label: `예적금 +${formatKorean(amount)}` });
                             }
                             if (changes.length > 0) {
                               onApplyStrategies?.(changes, false);
-                              setFilledAccounts(prev => ({ ...prev, [key]: filledAmount }));
-                              // 해당 입력 영역으로 스크롤 이동
+                              setFilledAccounts(prev => ({ ...prev, [key]: filledAmt }));
+                              setDragAmounts(prev => { const next = { ...prev }; delete next[key]; return next; });
                               setTimeout(() => {
                                 const targetId = key === 'pension' ? 'section-pension' : `asset-${key}`;
                                 const el = document.getElementById(targetId);
@@ -833,9 +865,10 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                               }, 300);
                             }
                           }}
-                          style={{ padding: "3px 10px", fontSize: 11, fontWeight: 600, color: "#00b1bb", background: "rgba(0,177,187,0.1)", border: "none", borderRadius: 4, cursor: "pointer" }}
+                          className="btn-fill"
+                          style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 6, cursor: "pointer" }}
                         >
-                          채우기
+                          {dragExtra > 0 ? `+${formatKorean(dragExtra)} 채우기` : '채우기'}
                         </button>
                       )}
                     </div>
@@ -844,9 +877,86 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                     <span>예상 잔액 {formatKorean(adjustedCurrent)}</span>
                     <span>권장 {formatKorean(account.target)}</span>
                   </div>
-                  <div style={{ height: 6, borderRadius: 3, background: "var(--border-secondary)", overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 3, width: `${Math.min(100, percent)}%`, background: isEnough ? "#00b1bb" : "var(--color-error)", transition: "width 0.5s ease" }} />
-                  </div>
+                  {(() => {
+                    const canDrag = !isFilled && !isEnough && account.target > 0;
+                    const basePercent = account.target > 0 ? Math.min(100, Math.round((account.current + filledAmount) / account.target * 100)) : 0;
+                    const dragPercent = dragExtra > 0 ? Math.min(100 - basePercent, Math.round(dragExtra / account.target * 100)) : 0;
+                    const handlePercent = Math.min(100, basePercent + dragPercent);
+                    const handleDrag = canDrag ? (e: React.PointerEvent) => {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                      const bar = e.currentTarget as HTMLElement;
+                      const update = (clientX: number) => {
+                        const rect = bar.getBoundingClientRect();
+                        const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                        const targetVal = ratio * account.target;
+                        const base = account.current + filledAmount;
+                        const extra = Math.max(0, targetVal - base);
+                        const rounded = Math.round(extra / 1000000) * 1000000;
+                        setDragAmounts(prev => {
+                          if (rounded <= 0) { const n = { ...prev }; delete n[key]; return n; }
+                          return { ...prev, [key]: rounded };
+                        });
+                      };
+                      update(e.clientX);
+                    } : undefined;
+                    const handleMove = canDrag ? (e: React.PointerEvent) => {
+                      if (e.pressure === 0) return;
+                      const bar = e.currentTarget as HTMLElement;
+                      const rect = bar.getBoundingClientRect();
+                      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                      const targetVal = ratio * account.target;
+                      const base = account.current + filledAmount;
+                      const extra = Math.max(0, targetVal - base);
+                      const rounded = Math.round(extra / 1000000) * 1000000;
+                      setDragAmounts(prev => {
+                        if (rounded <= 0) { const n = { ...prev }; delete n[key]; return n; }
+                        return { ...prev, [key]: rounded };
+                      });
+                    } : undefined;
+                    return (
+                      <div
+                        onPointerDown={handleDrag}
+                        onPointerMove={handleMove}
+                        style={{ height: 24, borderRadius: 6, background: "var(--border-secondary)", position: "relative", cursor: canDrag ? "pointer" : "default", touchAction: "none", userSelect: "none", padding: "8px 0" }}
+                      >
+                        {/* 트랙 */}
+                        <div style={{ position: "absolute", top: 8, left: 0, right: 0, height: 8, borderRadius: 4, background: "var(--border-secondary)", overflow: "hidden" }}>
+                          {/* 기존 잔액 + 드래그 추가분을 하나로 연결 */}
+                          <div style={{ position: "absolute", height: "100%", width: `${handlePercent}%`, borderRadius: 4, overflow: "hidden", display: "flex" }}>
+                            <div style={{ width: dragExtra > 0 ? `${Math.round(basePercent / handlePercent * 100)}%` : "100%", height: "100%", background: (basePercent >= 100 && dragExtra === 0) ? "#00b1bb" : "#9ca3af", flexShrink: 0 }} />
+                            {dragExtra > 0 && (
+                              <div style={{ flex: 1, height: "100%", background: "rgba(0,177,187,0.5)" }} />
+                            )}
+                          </div>
+                        </div>
+                        {/* 100% 기준선 */}
+                        <div style={{ position: "absolute", top: 5, left: "100%", width: 1, height: 14, background: "var(--text-quaternary, #ccc)", transform: "translateX(-1px)" }} />
+                        {/* 드래그 핸들 */}
+                        {canDrag && (
+                          <div style={{
+                            position: "absolute", top: "50%", left: `${handlePercent}%`,
+                            width: 18, height: 18, borderRadius: "50%",
+                            background: "linear-gradient(145deg, #b0b7c0, #8b929b)", border: "2px solid #fff",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.4)",
+                            transform: "translate(-50%, -50%)", cursor: "grab",
+                          }} />
+                        )}
+                        {/* 드래그 중 금액 표시 */}
+                        {dragExtra > 0 && canDrag && (
+                          <div style={{
+                            position: "absolute", bottom: 20, left: `${handlePercent}%`,
+                            transform: "translateX(-50%)",
+                            padding: "2px 8px", borderRadius: 4,
+                            background: "rgba(0,177,187,0.15)", color: "#00b1bb",
+                            fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
+                          }}>
+                            +{formatKorean(dragExtra)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
@@ -856,13 +966,23 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               * 은퇴({planInputs?.retirementStartAge}세)부터 국민연금 수령({planInputs?.nationalPensionStartAge}세)까지 <strong style={{ color: "var(--text-secondary)" }}>{analysis.bridgeYears}년</strong>의 소득 공백기가 있습니다. ISA·예적금으로 이 기간을 버틸 수 있어야 합니다.
             </p>
           )}
-          {/* 채우기 후 다시 계산 버튼 */}
           {Object.keys(filledAccounts).length > 0 && onRecalculate && (
             <button
               onClick={() => {
+                // 전략 카드 변경사항도 함께 반영
+                const allChanges: StrategyChange[] = [];
+                for (const s of scenarios) {
+                  if (s.changes && s.changes.length > 0) {
+                    allChanges.push(...s.changes);
+                  }
+                }
+                if (allChanges.length > 0) {
+                  onApplyStrategies?.(allChanges, true);
+                } else {
+                  onRecalculate();
+                }
                 setFilledAccounts({});
                 setSolutionPhase(3);
-                onRecalculate();
               }}
               style={{
                 width: "100%", marginTop: 12, padding: "12px 0",
@@ -874,31 +994,6 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               채운 금액으로 다시 계산하기
             </button>
           )}
-        </div>
-      )}
-
-      {/* 전략 안내 + 반영 버튼 */}
-      {!isFireSuccess && (
-        <div style={{ padding: "0 16px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span style={{ flex: 1 }} />
-          <button
-            className="apply-strategy-btn"
-            onClick={() => {
-              const allChanges: StrategyChange[] = [];
-              for (const s of scenarios) {
-                if (s.changes && s.changes.length > 0) {
-                  allChanges.push(...s.changes);
-                }
-              }
-              setSolutionPhase(1);
-              setFilledAccounts({});
-              onApplyStrategies?.(allChanges, true);
-            }}
-            className="apply-strategy-btn"
-            style={{ padding: "8px 16px", fontSize: 12, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", gap: 5 }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 제이의 전략으로 즉시 탈출하기
-          </button>
         </div>
       )}
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { Calculator, TrendingUp, RotateCcw, Info, X, Download, FileText, FileSpreadsheet, FileJson, CheckCircle, AlertTriangle, Loader2, Check, Sparkles } from "lucide-react";
+import { Calculator, TrendingUp, Info, X, Download, FileText, FileSpreadsheet, FileJson, CheckCircle, AlertTriangle, Loader2, Check, Sparkles, Trash2, PenLine } from "lucide-react";
 import { isAdmin } from "./src/PasswordGate";
 
 interface SimulationCompleteData {
@@ -11,7 +11,8 @@ interface SimulationCompleteData {
 
 function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
   const [show, setShow] = useState(false);
-  const [style, setStyle] = useState<React.CSSProperties>({});
+  const [tipStyle, setTipStyle] = useState<React.CSSProperties>({});
+  const [arrowStyle, setArrowStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLSpanElement>(null);
 
   const handleEnter = () => {
@@ -21,22 +22,34 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
     let left = rect.left + rect.width / 2 - tipWidth / 2;
     if (left < 8) left = 8;
     if (left + tipWidth > window.innerWidth - 8) left = window.innerWidth - 8 - tipWidth;
-    setStyle({
+    const arrowLeft = rect.left + rect.width / 2 - left - 6;
+    setTipStyle({
       position: 'fixed',
-      top: rect.bottom + 8,
+      bottom: window.innerHeight - rect.top + 8,
       left,
       width: tipWidth,
-      padding: '8px 14px',
-      borderRadius: 8,
-      background: 'var(--text-primary)',
-      color: 'var(--bg-primary)',
+      padding: '12px 16px',
+      borderRadius: 10,
+      background: '#fff',
+      color: 'var(--text-primary)',
       fontSize: 13,
       fontWeight: 500,
       lineHeight: 1.8,
       textAlign: 'left' as const,
       whiteSpace: 'normal',
-      boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+      boxShadow: '0 6px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
       zIndex: 10000,
+      pointerEvents: 'none' as const,
+    });
+    setArrowStyle({
+      position: 'absolute' as const,
+      bottom: -6,
+      left: Math.max(12, Math.min(arrowLeft, tipWidth - 20)),
+      width: 0,
+      height: 0,
+      borderLeft: '6px solid transparent',
+      borderRight: '6px solid transparent',
+      borderTop: '6px solid #fff',
       pointerEvents: 'none' as const,
     });
     setShow(true);
@@ -53,7 +66,10 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
     >
       {children}
       {show && createPortal(
-        <div style={style}>{formatText(text)}</div>,
+        <div style={tipStyle}>
+          {formatText(text)}
+          <div style={arrowStyle} />
+        </div>,
         document.body
       )}
     </span>
@@ -347,33 +363,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           });
         }
         
-        // 시뮬레이션 결과 복원
-        if (parsed.results && Array.isArray(parsed.results) && parsed.results.length > 0) {
-          const updatedResults = parsed.results.map((row: SimulationRow) => ({
-            ...row,
-            nationalPension: row.nationalPension ?? 0,
-            healthInsurance: row.healthInsurance ?? 0,
-            lifeInsurancePension: row.lifeInsurancePension ?? 0,
-            savingsWithdrawal: row.savingsWithdrawal ?? 0,
-            savingsBalance: row.savingsBalance ?? 0,
-            debtRepayment: row.debtRepayment ?? 0,
-            debtBalance: row.debtBalance ?? 0,
-            irregularExpense: row.irregularExpense ?? 0,
-          }));
-          setResults(updatedResults);
-          setShowResults(true); // 결과가 있으면 표시
-          
-          // 성공/실패 정보 복원
-          if (parsed.isFireSuccess !== undefined) {
-            setIsFireSuccess(parsed.isFireSuccess);
-          }
-          if (parsed.assetDepletionAge !== undefined) {
-            setAssetDepletionAge(parsed.assetDepletionAge);
-          }
-          if (parsed.failureInfo) {
-            setFailureInfo(parsed.failureInfo);
-          }
-        }
+        // 시뮬레이션 결과는 복원하지 않음 — 계산하기 버튼을 눌러야 결과가 표시됨
       } catch (e) {
         console.error('Failed to load saved data:', e);
       }
@@ -550,6 +540,10 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
         const retireAge = field === 'retirementStartAge' ? parsed : next.retirementStartAge;
         next.startYear = thisYear + (retireAge - age);
       }
+      // 시작년도가 변경되면 희망은퇴나이 자동 계산
+      if (field === 'startYear') {
+        next.retirementStartAge = next.currentAge + (parsed - thisYear);
+      }
       // 75세 이전 생활비 변경 시 75세 이후를 70%로 자동 채움
       if (field === 'monthlyLivingCostBefore75') {
         next.monthlyLivingCostAfter75 = Math.round(parsed * 0.7);
@@ -679,7 +673,8 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     let pensionBalance = totalPersonalPensionBalance + totalRetirementBalance;
     let overseasBalance = resolvedOverseas;
     let savingsBalance = resolvedSavings; // 예적금 잔액
-    let debtBalance = inputs.totalDebt; // 부채 잔액
+    // 은퇴 시작 나이가 상환 종료 나이보다 크면 이미 상환 완료
+    let debtBalance = inputs.retirementStartAge > inputs.debtEndAge ? 0 : inputs.totalDebt;
     const savingsReturnRate = inputs.savingsReturnRate || 0.03;
 
     // 수익률 기본값 설정 (NaN 방지)
@@ -1192,7 +1187,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '35세 싱글 (자산 2.5억)',
       img: '/images/tip1.png',
-      desc: <>현재 <B>35세</B> 싱글이고, 매달 <B>300만원</B>의 생활비가 필요해요. <B>55세</B> 은퇴 시점에 퇴직연금(DC형) <B>5,000만원</B>, 연금저축 <B>8,000만원</B>, ISA <B>4,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>3,000만원</B>이 예상됩니다. 현재 대출이 <B>5,000만원</B> 남아있고, <B>45세</B>까지 갚을 계획이에요. <B>90세</B>까지 자금흐름을 계산해보겠습니다.</>,
+      desc: <>현재 <B>35세</B> 싱글이고, 은퇴는 <B>55세</B>를 하려고 해요. 희망하는 한달 생활비는 <B>300만원</B>이에요. 은퇴 시점에 퇴직연금(DC형) <B>5,000만원</B>, 연금저축 <B>8,000만원</B>, ISA <B>4,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>3,000만원</B>이 예상돼요. 현재 대출이 <B>5,000만원</B> 남아있고, <B>45세</B>까지 갚을 계획이에요.</>,
       data: {
         currentAge: 35, retirementStartAge: 55, simulationEndAge: 90,
         monthlyLivingCostBefore75: 3000000, monthlyLivingCostAfter75: 2500000, inflationRate: 2.5,
@@ -1222,7 +1217,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '42세 싱글 (자산 3억)',
       img: '/images/tip2.png',
-      desc: <>현재 <B>42세</B> 싱글이고, 매달 <B>350만원</B>의 생활비가 필요해요. <B>55세</B> 은퇴 시점에 퇴직연금(DC형) <B>8,000만원</B>, 연금저축 <B>6,000만원</B>, 연금보험 <B>4,000만원</B>, ISA <B>4,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>3,000만원</B>이 예상됩니다. 부동산 <B>3억</B>(<B>70세</B>부터 주택연금 월 <B>50만원</B>)도 있어요. 현재 대출 <B>3,000만원</B>은 <B>55세</B>까지 상환 예정이에요. <B>90세</B>까지 자금흐름을 계산해보겠습니다.</>,
+      desc: <>현재 <B>42세</B> 싱글이고, 은퇴는 <B>55세</B>를 하려고 해요. 희망하는 한달 생활비는 <B>350만원</B>이에요. 은퇴 시점에 퇴직연금(DC형) <B>8,000만원</B>, 연금저축 <B>6,000만원</B>, 연금보험 <B>4,000만원</B>, ISA <B>4,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>3,000만원</B>이 예상돼요. 부동산 <B>3억</B>이 있고, <B>70세</B>부터 주택연금 월 <B>50만원</B>을 받을 수 있어요. 현재 대출 <B>3,000만원</B>은 <B>55세</B>까지 상환할 계획이에요.</>,
       data: {
         currentAge: 42, retirementStartAge: 55, simulationEndAge: 90,
         monthlyLivingCostBefore75: 3500000, monthlyLivingCostAfter75: 2500000, inflationRate: 2,
@@ -1254,7 +1249,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '52세 싱글 (자산 5억)',
       img: '/images/tip3.png',
-      desc: <>현재 <B>52세</B> 싱글이고, 매달 <B>400만원</B>의 생활비가 필요해요. <B>55세</B> 은퇴 시점에 퇴직연금(IRP) <B>1.5억</B>, 연금저축 2개(<B>8,000만원</B> + <B>3,000만원</B>), 연금보험 <B>4,000만원</B>, ISA <B>5,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>5,000만원</B>이 예상됩니다. 생명보험연금(<B>55세</B>부터 연 <B>200만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>80만원</B>)도 있어요. 대출은 없고, <B>70세</B>에 의료비 <B>2,000만원</B>을 예상하고 있어요. <B>90세</B>까지 자금흐름을 계산해보겠습니다.</>,
+      desc: <>현재 <B>52세</B> 싱글이고, 은퇴는 <B>55세</B>를 하려고 해요. 희망하는 한달 생활비는 <B>400만원</B>이에요. 은퇴 시점에 퇴직연금(IRP) <B>1.5억</B>, 연금저축 2개(<B>8,000만원</B> + <B>3,000만원</B>), 연금보험 <B>4,000만원</B>, ISA <B>5,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>5,000만원</B>이 예상돼요. 생명보험연금(<B>55세</B>부터 연 <B>200만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>80만원</B>)도 있어요. 대출은 없고, <B>70세</B>에 의료비 <B>2,000만원</B>을 예상하고 있어요.</>,
       data: {
         currentAge: 52, retirementStartAge: 55, simulationEndAge: 90,
         monthlyLivingCostBefore75: 4000000, monthlyLivingCostAfter75: 3000000, inflationRate: 2,
@@ -1287,7 +1282,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '45세 직장인 (자산 5억)',
       img: '/images/tip1.png',
-      desc: <>현재 <B>45세</B> 직장인이고, 매달 <B>400만원</B>의 생활비가 필요해요. <B>55세</B> 은퇴 시점에 퇴직연금(DC형) <B>1억</B>, 연금저축 <B>1억</B>, 연금보험 <B>5,000만원</B>, ISA <B>5,000만원</B>, 예적금 <B>1억</B>이 예상됩니다. 부동산 <B>5억</B>(<B>70세</B>부터 주택연금 월 <B>80만원</B>)도 있어요. 현재 대출이 <B>1억</B> 남아있고 <B>60세</B>까지 갚을 예정이에요. <B>60세</B>에 자녀 결혼 비용 <B>5,000만원</B>을 예상합니다. <B>90세</B>까지 자금흐름을 계산해보겠습니다.</>,
+      desc: <>현재 <B>45세</B> 직장인이고, 은퇴는 <B>55세</B>를 하려고 해요. 희망하는 한달 생활비는 <B>400만원</B>이에요. 은퇴 시점에 퇴직연금(DC형) <B>1억</B>, 연금저축 <B>1억</B>, 연금보험 <B>5,000만원</B>, ISA <B>5,000만원</B>, 예적금 <B>1억</B>이 예상돼요. 부동산 <B>5억</B>이 있고, <B>70세</B>부터 주택연금 월 <B>80만원</B>을 받을 수 있어요. 현재 대출이 <B>1억</B> 남아있고, <B>60세</B>까지 갚을 예정이에요. <B>60세</B>에 자녀 결혼 비용 <B>5,000만원</B>도 예상하고 있어요.</>,
       data: {
         currentAge: 45, retirementStartAge: 55, simulationEndAge: 90,
         monthlyLivingCostBefore75: 4000000, monthlyLivingCostAfter75: 3000000, inflationRate: 2.5,
@@ -1317,7 +1312,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '53세 고자산 (자산 10억)',
       img: '/images/tip2.png',
-      desc: <>현재 <B>53세</B>이고, 매달 <B>500만원</B>의 생활비가 필요해요. 내년 <B>54세</B> 은퇴 시점에 퇴직연금(IRP) 2개(<B>1.2억</B> + <B>8,000만원</B>), 연금저축 2개(<B>1.5억</B> + <B>1억</B>), 연금보험 <B>5,000만원</B>, ISA <B>2억</B>(부부 각 <B>1억</B>), 해외직투 <B>1억</B>, 예적금 <B>5,000만원</B>이 예상됩니다. 부동산 <B>6억</B>(<B>65세</B>부터 주택연금 월 <B>100만원</B>)도 있어요. 대출은 없어요. <B>85세</B>까지 자금흐름을 계산해보겠습니다.</>,
+      desc: <>현재 <B>53세</B>이고, 은퇴는 내년 <B>54세</B>를 하려고 해요. 희망하는 한달 생활비는 <B>500만원</B>이에요. 은퇴 시점에 퇴직연금(IRP) 2개(<B>1.2억</B> + <B>8,000만원</B>), 연금저축 2개(<B>1.5억</B> + <B>1억</B>), 연금보험 <B>5,000만원</B>, ISA <B>2억</B>(부부 각 <B>1억</B>), 해외직투 <B>1억</B>, 예적금 <B>5,000만원</B>이 예상돼요. 부동산 <B>6억</B>이 있고, <B>65세</B>부터 주택연금 월 <B>100만원</B>을 받을 수 있어요. 대출은 없어요.</>,
       data: {
         currentAge: 53, retirementStartAge: 54, simulationEndAge: 85,
         monthlyLivingCostBefore75: 5000000, monthlyLivingCostAfter75: 4000000, inflationRate: 2,
@@ -1349,7 +1344,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '62세 은퇴자 (연금 중심)',
       img: '/images/tip3.png',
-      desc: <>현재 <B>62세</B>이고, 이미 <B>60세</B>에 은퇴했어요. 매달 <B>350만원</B>의 생활비가 필요합니다. 국민연금은 <B>63세</B>부터 연 <B>2,000만원</B> 수령 예정이에요. 퇴직연금(IRP) <B>1.5억</B>, 연금저축 <B>1.2억</B>, 연금보험 <B>8,000만원</B>이 있어요. ISA <B>3,000만원</B>, 예적금 <B>8,000만원</B>, 생명보험연금(<B>60세</B>부터 연 <B>300만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>70만원</B>)도 있습니다. 대출은 없어요. <B>90세</B>까지 시뮬레이션합니다.</>,
+      desc: <>현재 <B>62세</B>이고, 이미 <B>60세</B>에 은퇴했어요. 희망하는 한달 생활비는 <B>350만원</B>이에요. 국민연금은 <B>63세</B>부터 연 <B>2,000만원</B> 수령 예정이에요. 퇴직연금(IRP) <B>1.5억</B>, 연금저축 <B>1.2억</B>, 연금보험 <B>8,000만원</B>이 있어요. ISA <B>3,000만원</B>, 예적금 <B>8,000만원</B>, 생명보험연금(<B>60세</B>부터 연 <B>300만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>70만원</B>)도 있어요. 대출은 없어요.</>,
       data: {
         currentAge: 62, retirementStartAge: 60, simulationEndAge: 90,
         monthlyLivingCostBefore75: 3500000, monthlyLivingCostAfter75: 2500000, inflationRate: 2,
@@ -1411,6 +1406,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     setAssetInputMode('direct');
     setPensionInputMode('direct');
     setAppliedFields({});
+    setPresetDescExpanded(true);
     onSimulationComplete?.({ results: [], isFireSuccess: true, assetDepletionAge: null });
   };
 
@@ -1607,7 +1603,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                 className={!selectedPreset ? 'preset-cta' : ''}
                 style={{ padding: '6px 28px 6px 12px', fontSize: 13, fontWeight: 600, color: selectedPreset ? 'var(--text-primary)' : '#fff', borderRadius: 8, border: selectedPreset ? '1px solid var(--border-primary)' : 'none', backgroundColor: selectedPreset ? 'var(--bg-secondary)' : '#3182F6', cursor: 'pointer', minWidth: 100, height: 33.5, boxShadow: selectedPreset ? 'none' : '0 2px 8px rgba(49, 130, 246, 0.3)', textAlign: 'left' as const, fontFamily: 'inherit', position: 'relative' as const, overflow: 'hidden' }}
               >
-                {selectedPreset ? EXAMPLE_PRESETS[parseInt(selectedPreset)]?.label : '나와 비슷한 상황 보기'}
+                {selectedPreset ? EXAMPLE_PRESETS[parseInt(selectedPreset)]?.label : '연령별 탈출 시나리오'}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style={{ position: 'absolute', right: 10, top: '50%', transform: `translateY(-50%) ${presetDropdownOpen ? 'rotate(180deg)' : ''}`, transition: 'transform 0.2s' }}>
                   <polyline points="6 9 12 15 18 9" stroke={selectedPreset ? '#999' : '#fff'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -1640,11 +1636,12 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
             )}
             <button
               onClick={resetForm}
-              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', borderRadius: 8, border: '1px solid var(--border-primary)', background: 'transparent', cursor: 'pointer', height: 33.5, fontFamily: 'inherit', marginLeft: 'auto' }}
-              title="내 상황으로 계산"
+              className="btn-reset"
+              style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', fontSize: 13, fontWeight: 400, color: 'var(--text-tertiary)', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', height: 33.5, fontFamily: 'inherit', marginLeft: 'auto', transition: 'background 0.15s' }}
+              title="내 정보 직접 입력하기"
             >
-              <RotateCcw style={{ width: 14, height: 14 }} />
-              <span className="reset-label">내 상황으로 계산</span>
+              <PenLine style={{ width: 14, height: 14 }} />
+              <span className="reset-label">내 정보 직접 입력하기</span>
             </button>
             <div className="recent-calc-btn" style={{ marginLeft: 0, display: 'none' }}>
             {(() => { const hasSaved = !!localStorage.getItem('cashFlowData'); return (
@@ -1682,44 +1679,45 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
             </div>
         </div>
 
-        {/* 선택된 프리셋 설명 */}
-        {selectedPreset && EXAMPLE_PRESETS[parseInt(selectedPreset)]?.desc && Object.keys(appliedFields).length === 0 && (
-          <div style={{ background: 'var(--accent-blue-bg)', borderRadius: 10, margin: '0 0 8px', overflow: 'hidden', border: '1px solid #c9e0f9' }}>
-            <button onClick={() => setPresetDescExpanded(!presetDescExpanded)} style={{ width: '100%', padding: '12px 18px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-blue)' }}>{EXAMPLE_PRESETS[parseInt(selectedPreset)].label}</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: presetDescExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--accent-blue)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </button>
-            {presetDescExpanded && (
-            <div style={{ padding: '0 18px 14px' }}>
-              <div className="preset-desc-layout" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-                {/* 좌: 캐릭터 + 설명 */}
-                <div style={{ flex: 1.2, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <img src={EXAMPLE_PRESETS[parseInt(selectedPreset)].img} alt="" style={{ width: 90, height: 'auto', flexShrink: 0 }} />
-                    <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, wordBreak: 'keep-all' as const, lineHeight: 1.7 }}>
-                      {EXAMPLE_PRESETS[parseInt(selectedPreset)].desc}
-                    </p>
+        {/* 선택된 프리셋 설명 — 셀렉트 하단에 붙음 */}
+        {selectedPreset && EXAMPLE_PRESETS[parseInt(selectedPreset)]?.desc && Object.keys(appliedFields).length === 0 && presetDescExpanded && (
+          <div style={{ position: 'relative', margin: '0 0 8px' }}>
+            {/* 위쪽 화살표 */}
+            <div style={{ position: 'absolute', top: -6, left: 24, width: 12, height: 12, background: 'var(--accent-blue-bg)', border: '1px solid #c9e0f9', borderRight: 'none', borderBottom: 'none', transform: 'rotate(45deg)', zIndex: 1 }} />
+            <div style={{ background: 'var(--accent-blue-bg)', borderRadius: 10, overflow: 'hidden', border: '1px solid #c9e0f9', position: 'relative' as const }}>
+              <button onClick={() => setPresetDescExpanded(false)} style={{ position: 'absolute' as const, top: 8, right: 8, padding: 4, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2 }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 7.5L6 4.5L9 7.5" stroke="var(--accent-blue)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              <div style={{ padding: '14px 18px' }}>
+                <div className="preset-desc-layout" style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+                  {/* 좌: 캐릭터 + 설명 */}
+                  <div style={{ flex: 1.2, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <img src={EXAMPLE_PRESETS[parseInt(selectedPreset)].img} alt="" style={{ width: 90, height: 'auto', flexShrink: 0 }} />
+                      <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, wordBreak: 'keep-all' as const, lineHeight: 1.7 }}>
+                        {EXAMPLE_PRESETS[parseInt(selectedPreset)].desc}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                {/* 우: 활용 팁 */}
-                <div style={{ flex: 0.8, minWidth: 0, paddingLeft: 20, borderLeft: '1px solid rgba(49,130,246,0.15)' }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-blue)', margin: '0 0 8px' }}>활용 팁</p>
-                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
-                    {[
-                      <>먼저 이대로 계산해서 결과를 확인해 보세요.</>,
-                      <><B>은퇴 나이</B>·<B>생활비</B>·<B>자산</B>을 자유롭게 바꿔보세요.</>,
-                      <>숫자를 조금만 바꿔도 결과가 크게 달라져요.</>,
-                    ].map((tip, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
-                        <span style={{ flexShrink: 0, color: 'var(--accent-blue)', fontWeight: 600 }}>{i + 1}.</span>
-                        <span>{tip}</span>
-                      </div>
-                    ))}
+                  {/* 우: 활용 팁 */}
+                  <div style={{ flex: 0.8, minWidth: 0, paddingLeft: 20, borderLeft: '1px solid rgba(49,130,246,0.15)' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-blue)', margin: '0 0 8px' }}>활용 팁</p>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+                      {[
+                        <>먼저 이대로 계산해서 결과를 확인해 보세요.</>,
+                        <><B>은퇴 나이</B>·<B>생활비</B>·<B>자산</B>을 자유롭게 바꿔보세요.</>,
+                        <>숫자를 조금만 바꿔도 결과가 크게 달라져요.</>,
+                      ].map((tip, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, fontSize: 13, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+                          <span style={{ flexShrink: 0, color: 'var(--accent-blue)', fontWeight: 600 }}>{i + 1}.</span>
+                          <span>{tip}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            )}
           </div>
         )}
 
@@ -1737,7 +1735,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
             <input type="number" value={inputs.currentAge} onChange={(e) => handleInputChange('currentAge', e.target.value)} style={{ width: 120, textAlign: 'right' as const, padding: '6px 10px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
           </div>
           <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, flex: 1, textAlign: 'right' as const }}>희망 은퇴 나이</span>
+            <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, flex: 1, textAlign: 'right' as const }}><Tooltip text="은퇴 나이를 늦추면 결과가 크게 달라져요. ① 자산이 수익률로 더 오래 불어나고 ② 생활비를 쓰는 기간이 줄어들고 ③ 국민연금(65세) 수령까지 자산만으로 버텨야 하는 공백 기간이 짧아져요. 특히 55세 은퇴 시 65세까지 10년간 국민연금 없이 자산이 크게 소진되는 구간이 가장 위험해요.">희망 은퇴 나이 ⓘ</Tooltip></span>
             {strategyBadge('retirementStartAge')}
             <input type="number" value={inputs.retirementStartAge} onChange={(e) => handleInputChange('retirementStartAge', e.target.value)} style={{ width: 120, textAlign: 'right' as const, padding: '6px 10px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', ...appliedInputStyle('retirementStartAge') }} />
           </div>
@@ -1843,7 +1841,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           {/* ===== 🏛️ 1층: 국민연금 ===== */}
           <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px', boxShadow: 'var(--shadow-sm)' }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>1층: 국민연금</h3>
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>공적연금. 1969년생 이후 정상수령 65세 기준.</p>
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>국민연금공단에서 받는 공적연금이에요. 내 연금 예상액은 국민연금공단 홈페이지에서 확인하세요.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
           <div style={{ display: 'flex', flexDirection: 'column', padding: '8px 0', borderBottom: '1px solid var(--border-secondary)' }}>
             <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1860,7 +1858,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', padding: '8px 0' }}>
             <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, flex: 1 }}><Tooltip text="65세 정상수령 기준 월 수령액. 조기/연기 시 자동 조정.">월 수령액 (65세 기준) ⓘ</Tooltip></span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, flex: 1 }}><Tooltip text="65세에 정상 수령할 때 받는 월 금액을 입력해 주세요. 조기수령이나 연기수령을 선택하면 감액·증액이 자동으로 반영돼요.">월 수령액 (65세 기준) ⓘ</Tooltip></span>
               <input type="text" value={formatInputAmount(inputs.nationalPensionYearly / 12)} onChange={(e) => { const v = parseInt(e.target.value.replace(/,/g, ''), 10) || 0; handleInputChange('nationalPensionYearly', (v * 12).toString()); }} style={{ width: 120, textAlign: 'right' as const, padding: '6px 10px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
             </div>
             {inputs.nationalPensionStartAge !== 65 && inputs.nationalPensionYearly > 0 && (
@@ -1875,7 +1873,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           {/* ===== 🏢 2층: 퇴직연금 ===== */}
           <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px', boxShadow: 'var(--shadow-sm)' }}>
           <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 8 }}>2층: 퇴직연금</h3>
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>퇴직연금 계좌를 추가하세요. (IRP, DC, DB)</p>
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>퇴직연금 계좌를 추가하세요.</p>
 
           {inputs.retirementPensions.map((rp, rpIdx) => {
             const updateRP = (field: string, value: any) => {
@@ -1892,20 +1890,16 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
             };
             const isLastRP = rpIdx === inputs.retirementPensions.length - 1;
             return (
-              <div key={rp.id} style={{ padding: '10px 0', borderBottom: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <div style={{ display: 'flex', gap: 3 }}>
-                    {(['irp', 'db', 'dc'] as const).map(t => (
-                      <button key={t} onClick={() => updateRP('type', t)}
-                        style={{ padding: '4px 10px', fontSize: 11, fontWeight: 600, borderRadius: 4, border: 'none', lineHeight: 1, display: 'flex', alignItems: 'center', cursor: 'pointer', background: rp.type === t ? 'var(--accent-blue)' : 'transparent', color: rp.type === t ? '#fff' : 'var(--text-tertiary)' }}>
-                        {t.toUpperCase()}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={removeRP} style={{ padding: '4px 10px', border: 'none', background: 'var(--bg-secondary)', borderRadius: 4, cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 600, lineHeight: 1, display: 'flex', alignItems: 'center' }}>삭제</button>
-                </div>
+              <div key={rp.id} className="asset-card" style={{ padding: '14px 16px', marginBottom: 8, borderRadius: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0 20px' }}>
-                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                    <button className="btn-delete" onClick={removeRP} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-quaternary, #ccc)" /></button>
+                    <select value={rp.type} onChange={(e) => updateRP('type', e.target.value)}
+                      className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
+                      <option value="irp">IRP</option>
+                      <option value="dc">DC</option>
+                      <option value="db">DB</option>
+                    </select>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>{rp.type === 'db' ? '예상 퇴직급여' : '적립금'} <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>(은퇴 시점)</span></span>
                     <input type="text" value={formatInputAmount(rp.balance)} onChange={(e) => updateRP('balance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
                       style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
@@ -1927,13 +1921,12 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           })}
 
           {/* 퇴직연금 추가 버튼 */}
-          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: inputs.retirementPensions.length > 0 ? 12 : 0, paddingTop: inputs.retirementPensions.length > 0 ? 12 : 0, borderTop: inputs.retirementPensions.length > 0 ? '1px solid var(--border-secondary)' : 'none' }}>
-            {(['irp', 'dc', 'db'] as const).map(t => (
-              <button key={t} onClick={() => setInputs(prev => ({ ...prev, retirementPensions: [...prev.retirementPensions, createDefaultRetirementPension(t)] }))}
-                style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, color: 'var(--accent-blue)', background: 'var(--accent-blue-bg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-                + {t.toUpperCase()}
-              </button>
-            ))}
+          <div style={{ marginTop: inputs.retirementPensions.length > 0 ? 12 : 0, paddingTop: inputs.retirementPensions.length > 0 ? 12 : 0, borderTop: inputs.retirementPensions.length > 0 ? '1px solid var(--border-secondary)' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, border: '1px dashed var(--border-primary)', cursor: 'pointer', transition: 'all 0.15s' }}
+              onClick={() => setInputs(prev => ({ ...prev, retirementPensions: [...prev.retirementPensions, createDefaultRetirementPension('irp')] }))}>
+              <span style={{ fontSize: 18, color: 'var(--accent-blue)', lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>퇴직연금 계좌 추가</span>
+            </div>
           </div>
           </div>
 
@@ -1941,13 +1934,11 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           <div id="section-pension" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>3층: 개인연금</h3>
-            <div style={{ display: 'flex', gap: 2 }}>
-              {(['direct', 'accumulate'] as const).map(m => (
-                <button key={m} onClick={() => setPensionInputMode(m)}
-                  style={{ padding: '4px 10px', fontSize: 11, fontWeight: 600, borderRadius: 4, border: 'none', lineHeight: 1, display: 'flex', alignItems: 'center', cursor: 'pointer', background: pensionInputMode === m ? 'var(--accent-blue)' : 'transparent', color: pensionInputMode === m ? '#fff' : 'var(--text-tertiary)' }}>
-                  {m === 'direct' ? '은퇴 시점' : '적립식'}
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: 2, padding: 2, borderRadius: 8, background: 'var(--bg-tertiary, #f3f4f6)', cursor: 'pointer', userSelect: 'none' as const }}>
+              <span onClick={() => setPensionInputMode('direct')}
+                style={{ padding: '3px 8px', fontSize: 10, fontWeight: 500, borderRadius: 6, transition: 'all 0.2s', background: pensionInputMode === 'direct' ? '#fff' : 'transparent', color: pensionInputMode === 'direct' ? 'var(--text-primary)' : 'var(--text-tertiary)', boxShadow: pensionInputMode === 'direct' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none' }}>은퇴 시점</span>
+              <span onClick={() => setPensionInputMode('accumulate')}
+                style={{ padding: '3px 8px', fontSize: 10, fontWeight: 500, borderRadius: 6, transition: 'all 0.2s', background: pensionInputMode === 'accumulate' ? '#fff' : 'transparent', color: pensionInputMode === 'accumulate' ? 'var(--text-primary)' : 'var(--text-tertiary)', boxShadow: pensionInputMode === 'accumulate' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none' }}>적립식</span>
             </div>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>{pensionInputMode === 'direct' ? '연금저축, 연금보험 계좌를 추가하세요.' : '현재 잔액과 연 납입액으로 은퇴 시점 자산을 자동 계산합니다.'}</p>
@@ -1976,24 +1967,20 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
               return Math.round(cb * compounded + yc * (compounded - 1) / r);
             };
             return (
-              <div key={pp.id} style={{ padding: '10px 0', borderBottom: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <div style={{ display: 'flex', gap: 3 }}>
-                    {([{ v: 'pension_savings' as PersonalPensionType, l: '연금저축' }, { v: 'pension_insurance' as PersonalPensionType, l: '연금보험' }]).map(t => (
-                      <button key={t.v} onClick={() => updatePP('type', t.v)}
-                        style={{ padding: '4px 10px', fontSize: 11, fontWeight: 600, borderRadius: 4, border: 'none', lineHeight: 1, display: 'flex', alignItems: 'center', cursor: 'pointer', background: pp.type === t.v ? 'var(--accent-blue)' : 'transparent', color: pp.type === t.v ? '#fff' : 'var(--text-tertiary)' }}>
-                        {t.l}
-                      </button>
-                    ))}
-                  </div>
-                  <button onClick={removePP} style={{ padding: '4px 10px', border: 'none', background: 'var(--bg-secondary)', borderRadius: 4, cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 600, lineHeight: 1, display: 'flex', alignItems: 'center' }}>삭제</button>
-                </div>
+              <div key={pp.id} className="asset-card" style={{ padding: '14px 16px', marginBottom: 8, borderRadius: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0 20px' }}>
                   {pensionInputMode === 'direct' ? (
                   <>
-                    <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                    <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                      <button className="btn-delete" onClick={removePP} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-quaternary, #ccc)" /></button>
+                      <select value={pp.type} onChange={(e) => updatePP('type', e.target.value)}
+                        className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
+                        <option value="pension_savings">연금저축</option>
+                        <option value="pension_insurance">연금보험</option>
+                      </select>
                       <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>잔액 <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>(은퇴 시점)</span></span>
                       <input type="text" value={formatInputAmount(pp.balance)} onChange={(e) => updatePP('balance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
+                        className={appliedFields['totalPension'] ? 'strategy-applied' : ''}
                         style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', ...appliedInputStyle('totalPension') }} />
                     </div>
                     <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
@@ -2004,7 +1991,13 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                   </>
                   ) : (
                   <>
-                    <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                    <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                      <button className="btn-delete" onClick={removePP} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-quaternary, #ccc)" /></button>
+                      <select value={pp.type} onChange={(e) => updatePP('type', e.target.value)}
+                        className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
+                        <option value="pension_savings">연금저축</option>
+                        <option value="pension_insurance">연금보험</option>
+                      </select>
                       <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
                       <input type="text" value={formatInputAmount(pp.currentBalance || 0)} onChange={(e) => updatePP('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
                         style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
@@ -2017,7 +2010,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                     <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>수익률(%)</span>
                       <input type="text" value={(pp.returnRate * 100).toFixed(1)} onChange={(e) => updatePP('returnRate', (parseFloat(e.target.value) || 0) / 100)}
-                        style={{ width: 70, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                        style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                     </div>
                     <div style={{ width: '100%', padding: '6px 10px', marginTop: 4, borderRadius: 6, background: 'rgba(16, 185, 129, 0.06)', fontSize: 12, color: '#0b9936', lineHeight: 1.4 }}>
                       {yearsToRetire > 0
@@ -2032,25 +2025,22 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           })}
 
           {/* 개인연금 추가 버튼 */}
-          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: inputs.personalPensions.length > 0 ? 12 : 0, paddingTop: inputs.personalPensions.length > 0 ? 12 : 0, borderTop: inputs.personalPensions.length > 0 ? '1px solid var(--border-secondary)' : 'none' }}>
-            <button onClick={() => setInputs(prev => ({ ...prev, personalPensions: [...prev.personalPensions, createDefaultPersonalPension('pension_savings')] }))}
-              style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, color: 'var(--accent-blue)', background: 'var(--accent-blue-bg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-              + 연금저축
-            </button>
-            <button onClick={() => setInputs(prev => ({ ...prev, personalPensions: [...prev.personalPensions, createDefaultPersonalPension('pension_insurance')] }))}
-              style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, color: 'var(--accent-blue)', background: 'var(--accent-blue-bg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-              + 연금보험
-            </button>
+          <div style={{ marginTop: inputs.personalPensions.length > 0 ? 12 : 0, paddingTop: inputs.personalPensions.length > 0 ? 12 : 0, borderTop: inputs.personalPensions.length > 0 ? '1px solid var(--border-secondary)' : 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, border: '1px dashed var(--border-primary)', cursor: 'pointer', transition: 'all 0.15s' }}
+              onClick={() => setInputs(prev => ({ ...prev, personalPensions: [...prev.personalPensions, createDefaultPersonalPension('pension_savings')] }))}>
+              <span style={{ fontSize: 18, color: 'var(--accent-blue)', lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>개인연금 계좌 추가</span>
+            </div>
           </div>
 
           {/* 공통 옵션: 인출/개시/소진 */}
           {inputs.personalPensions.length > 0 && (
-          <div style={{ marginTop: 16, padding: '14px 16px', borderRadius: 8, background: 'var(--bg-secondary)' }}>
+          <div className="asset-card" style={{ marginTop: 16, padding: '14px 16px', borderRadius: 8, background: 'var(--bg-secondary)' }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', marginBottom: 10 }}>인출 설정 <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>(전체 합산 기준)</span></p>
             <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0 24px' }}>
               <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}><Tooltip text="연금소진 모드 OFF 시 적용. 연 1,500만원 이하 분리과세 유리.">연 인출 금액 ⓘ</Tooltip></span>
-                <input type="text" value={formatInputAmount(inputs.pensionWithdrawalAmount)} onChange={(e) => handleInputChange('pensionWithdrawalAmount', e.target.value)} style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}><Tooltip text="'매년 고르게 나눠 쓰기'를 끄면 매년 이 금액만큼 인출해요. 연금소득이 연 1,500만원 이하이면 3.3~5.5%의 낮은 세율로 분리과세를 선택할 수 있어 절세에 유리해요.">연 인출 금액 ⓘ</Tooltip></span>
+                <input type="text" value={formatInputAmount(inputs.pensionWithdrawalAmount)} onChange={(e) => handleInputChange('pensionWithdrawalAmount', e.target.value)} disabled={inputs.usePensionDepletion} style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: inputs.usePensionDepletion ? 'var(--bg-tertiary, #e5e7eb)' : 'var(--bg-secondary)', color: inputs.usePensionDepletion ? 'var(--text-tertiary)' : 'var(--text-primary)', opacity: inputs.usePensionDepletion ? 0.6 : 1 }} />
               </div>
               <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}><Tooltip text="55세부터 수령 가능. 55세 미만 인출 시 기타소득세 16.5%.">개시 나이 ⓘ</Tooltip></span>
@@ -2059,10 +2049,10 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
               <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}><Tooltip text="ON: 매년 고르게 나눠 쓰기. OFF: 필요할 때만 꺼내 쓰기.">연금 인출 방식 ⓘ</Tooltip></span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 11, color: inputs.usePensionDepletion ? 'var(--accent-blue)' : 'var(--text-tertiary)' }}>{inputs.usePensionDepletion ? '매년 고르게 나눠 쓰기' : '필요할 때만 꺼내 쓰기'}</span>
+                  <span style={{ fontSize: 11, color: '#4b5563' }}>{inputs.usePensionDepletion ? '매년 고르게 나눠 쓰기' : '필요할 때만 꺼내 쓰기'}</span>
                   <button type="button" onClick={() => setInputs(prev => ({ ...prev, usePensionDepletion: !prev.usePensionDepletion }))}
-                    style={{ position: 'relative', display: 'inline-flex', height: 24, width: 44, alignItems: 'center', borderRadius: 9999, backgroundColor: inputs.usePensionDepletion ? 'var(--accent-blue)' : '#d1d5db', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
-                    <span style={{ position: 'absolute', display: 'inline-block', height: 18, width: 18, borderRadius: '50%', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'transform 0.2s ease', transform: inputs.usePensionDepletion ? 'translateX(23px)' : 'translateX(3px)' }} />
+                    style={{ position: 'relative', display: 'inline-flex', height: 18, width: 34, alignItems: 'center', borderRadius: 9999, backgroundColor: inputs.usePensionDepletion ? '#4b5563' : '#d1d5db', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+                    <span style={{ position: 'absolute', display: 'inline-block', height: 14, width: 14, borderRadius: '50%', backgroundColor: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'transform 0.2s ease', transform: inputs.usePensionDepletion ? 'translateX(17px)' : 'translateX(2px)' }} />
                   </button>
                 </div>
               </div>
@@ -2075,13 +2065,11 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           <div style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 12, padding: '20px 24px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>추가 자산</h3>
-            <div style={{ display: 'flex', gap: 2 }}>
-              {(['direct', 'accumulate'] as const).map(m => (
-                <button key={m} onClick={() => setAssetInputMode(m)}
-                  style={{ padding: '4px 10px', fontSize: 11, fontWeight: 600, borderRadius: 4, border: 'none', lineHeight: 1, display: 'flex', alignItems: 'center', cursor: 'pointer', background: assetInputMode === m ? 'var(--accent-blue)' : 'transparent', color: assetInputMode === m ? '#fff' : 'var(--text-tertiary)' }}>
-                  {m === 'direct' ? '은퇴 시점' : '적립식'}
-                </button>
-              ))}
+            <div style={{ display: 'flex', gap: 2, padding: 2, borderRadius: 8, background: 'var(--bg-tertiary, #f3f4f6)', cursor: 'pointer', userSelect: 'none' as const }}>
+              <span onClick={() => setAssetInputMode('direct')}
+                style={{ padding: '3px 8px', fontSize: 10, fontWeight: 500, borderRadius: 6, transition: 'all 0.2s', background: assetInputMode === 'direct' ? '#fff' : 'transparent', color: assetInputMode === 'direct' ? 'var(--text-primary)' : 'var(--text-tertiary)', boxShadow: assetInputMode === 'direct' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none' }}>은퇴 시점</span>
+              <span onClick={() => setAssetInputMode('accumulate')}
+                style={{ padding: '3px 8px', fontSize: 10, fontWeight: 500, borderRadius: 6, transition: 'all 0.2s', background: assetInputMode === 'accumulate' ? '#fff' : 'transparent', color: assetInputMode === 'accumulate' ? 'var(--text-primary)' : 'var(--text-tertiary)', boxShadow: assetInputMode === 'accumulate' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none' }}>적립식</span>
             </div>
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>{assetInputMode === 'direct' ? '은퇴 시점에 보유할 예상 자산을 입력하세요.' : '현재 잔액과 연 납입액으로 은퇴 시점 자산을 자동 계산합니다.'}</p>
@@ -2128,7 +2116,6 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
               setInputs(prev => ({ ...prev, ...resetFields, additionalAssets: prev.additionalAssets.filter((_, i) => i !== idx) }));
               if (showResults) setInputsDirty(true);
             };
-            const typeLabel = ASSET_TYPE_OPTIONS.find(o => o.value === asset.type)?.label || asset.type;
             const isLast = idx === inputs.additionalAssets.length - 1;
             const canAccumulate = ['isa', 'overseas', 'savings'].includes(asset.type);
             const useAccumulate = assetInputMode === 'accumulate' && canAccumulate;
@@ -2145,22 +2132,24 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
             };
 
             return (
-              <div key={asset.id} id={`asset-${asset.type}`} style={{ padding: '10px 0', borderBottom: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-blue)' }}>{typeLabel}</span>
-                  {asset.type === 'custom' && (
-                    <input type="text" placeholder="자산명" value={asset.name} onChange={(e) => updateAsset('name', e.target.value)}
-                      style={{ width: 100, padding: '3px 8px', fontSize: 12, border: '1px solid var(--border-primary)', borderRadius: 4, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
-                  )}
-                  <button onClick={removeAsset} style={{ padding: '4px 10px', border: 'none', background: 'var(--bg-secondary)', borderRadius: 4, cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 600, lineHeight: 1, display: 'flex', alignItems: 'center' }}>삭제</button>
-                </div>
+              <div key={asset.id} id={`asset-${asset.type}`} className="asset-card" style={{ padding: '14px 16px', marginBottom: 8, borderRadius: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border-secondary)' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0 20px' }}>
                   {/* === 직접입력 모드 (또는 적립식 미지원 자산) === */}
                   {!useAccumulate && (
                   <>
-                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                    <button className="btn-delete" onClick={removeAsset} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-quaternary, #ccc)" /></button>
+                    <select value={asset.type} onChange={(e) => updateAsset('type', e.target.value)}
+                      className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
+                      {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                    {asset.type === 'custom' && (
+                      <input type="text" placeholder="자산명" value={asset.name} onChange={(e) => updateAsset('name', e.target.value)}
+                        style={{ width: 80, padding: '3px 8px', fontSize: 12, border: '1px solid var(--border-primary)', borderRadius: 4, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                    )}
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>{asset.type === 'real_estate' ? '시가' : '잔액'} {canAccumulate && <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>(은퇴 시점)</span>}</span>
                     <input type="text" value={formatInputAmount(asset.balance)} onChange={(e) => updateAsset('balance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
+                      className={(asset.type === 'isa' && appliedFields['husbandISA']) || (asset.type === 'overseas' && appliedFields['overseasInvestmentAmount']) || (asset.type === 'savings' && appliedFields['savingsAmount']) ? 'strategy-applied' : ''}
                       style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', ...(asset.type === 'isa' ? appliedInputStyle('husbandISA') : asset.type === 'overseas' ? appliedInputStyle('overseasInvestmentAmount') : asset.type === 'savings' ? appliedInputStyle('savingsAmount') : {}) }} />
                   </div>
                   {!['life_insurance', 'real_estate'].includes(asset.type) && (
@@ -2176,7 +2165,12 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                   {/* === 적립식 모드 === */}
                   {useAccumulate && (
                   <>
-                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                    <button className="btn-delete" onClick={removeAsset} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-quaternary, #ccc)" /></button>
+                    <select value={asset.type} onChange={(e) => updateAsset('type', e.target.value)}
+                      className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
+                      {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
                     <input type="text" value={formatInputAmount(asset.currentBalance || 0)} onChange={(e) => updateAsset('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
                       style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
@@ -2234,13 +2228,12 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           })}
 
           {/* 추가 버튼 */}
-          <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-secondary)' }}>
-            {ASSET_TYPE_OPTIONS.map(opt => (
-              <button key={opt.value} onClick={() => setInputs(prev => ({ ...prev, additionalAssets: [...prev.additionalAssets, createDefaultAsset(opt.value)] }))}
-                style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, color: 'var(--accent-blue)', background: 'var(--accent-blue-bg)', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-                + {opt.label}
-              </button>
-            ))}
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-secondary)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, border: '1px dashed var(--border-primary)', cursor: 'pointer', transition: 'all 0.15s' }}
+              onClick={() => setInputs(prev => ({ ...prev, additionalAssets: [...prev.additionalAssets, createDefaultAsset('isa')] }))}>
+              <span style={{ fontSize: 18, color: 'var(--accent-blue)', lineHeight: 1 }}>+</span>
+              <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>자산 추가</span>
+            </div>
           </div>
           </div>
 
@@ -2291,7 +2284,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                 <button onClick={() => {
                   const updated = inputs.irregularExpenses.filter((_, i) => i !== idx);
                   setInputs(prev => ({ ...prev, irregularExpenses: updated }));
-                }} style={{ padding: '4px 10px', border: 'none', background: 'var(--bg-secondary)', borderRadius: 4, cursor: 'pointer', color: 'var(--text-tertiary)', fontSize: 11, fontWeight: 600, lineHeight: 1, display: 'flex', alignItems: 'center' }}>삭제</button>
+                }} className="btn-delete" style={{ width: 28, height: 28, border: 'none', background: 'transparent', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={12} color="var(--text-quaternary, #ccc)" /></button>
               </div>
             ))}
             <button onClick={() => {
@@ -2354,9 +2347,11 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
               cursor: !canCalculate ? 'default' : isSimulating ? 'wait' : 'pointer',
               opacity: !canCalculate ? 0.5 : 1,
               fontSize: 16,
-              boxShadow: simDone
-                ? '0 4px 20px rgba(5,150,105,0.4)'
-                : '0 4px 20px rgba(99,102,241,0.4)',
+              boxShadow: !canCalculate
+                ? 'none'
+                : simDone
+                  ? '0 4px 20px rgba(5,150,105,0.4)'
+                  : '0 4px 20px rgba(99,102,241,0.4)',
               transition: 'all 0.3s ease',
               overflow: 'hidden',
               minWidth: 220,

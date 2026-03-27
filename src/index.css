@@ -7107,6 +7107,138 @@ html {
   }
 }
 
+/* ===== 버튼 hover 스타일 ===== */
+
+/* × 닫기 버튼 hover */
+.btn-close-x:hover {
+  background: var(--accent-blue-bg, rgba(49, 130, 246, 0.08)) !important;
+  color: var(--accent-blue) !important;
+}
+
+/* 삭제 버튼 hover */
+.btn-delete:hover {
+  background: #fee2e2 !important;
+  color: #ef4444 !important;
+}
+.btn-delete:hover svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+}
+
+/* + 추가 버튼 hover (연금저축, ISA 등) */
+button[style*="accent-blue-bg"]:hover {
+  filter: brightness(0.92);
+}
+
+/* dashed 추가 영역 hover */
+div[style*="dashed"]:hover {
+  background: var(--accent-blue-bg, rgba(49, 130, 246, 0.06)) !important;
+  border-color: var(--accent-blue) !important;
+}
+
+/* 계산하기/전략 적용 등 주요 액션 버튼 hover */
+button[style*="linear-gradient"]:hover,
+button[style*="accent-blue"][style*="color: '#fff'"]:hover,
+.apply-strategy-btn:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+/* 초기화 버튼 hover */
+.btn-reset:hover {
+  background: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 드롭다운/셀렉트 hover */
+select:hover {
+  border-color: var(--accent-blue) !important;
+}
+
+/* 프리셋 드롭다운 버튼 hover */
+.preset-dropdown > button:hover {
+  filter: brightness(0.95);
+}
+
+/* 계산식 보기, 다운로드 등 텍스트 버튼 hover */
+button[title]:hover {
+  filter: brightness(0.9);
+}
+
+/* 모달 닫기 버튼 hover */
+button[style*="fontSize: 20"]:hover,
+button[style*="font-size: 20"]:hover {
+  color: var(--text-primary) !important;
+}
+
+/* 데모 배너 hover */
+#demo-banner:hover {
+  background: #334155 !important;
+}
+#demo-banner button:hover {
+  color: rgba(255,255,255,0.8) !important;
+}
+
+/* 계산하기 버튼 펄스 애니메이션 */
+@keyframes calc-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); }
+}
+.calc-btn:not(:disabled) {
+  animation: calc-pulse 2s ease-in-out infinite;
+}
+.calc-btn:disabled {
+  animation: none;
+}
+.calc-btn:hover {
+  animation: none;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+}
+
+/* 파란 셀렉트박스 — 화살표를 텍스트 바로 옆에 */
+/* 채우기 버튼 펄스 애니메이션 */
+@keyframes fill-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,177,187,0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(0,177,187,0); }
+}
+.btn-fill {
+  animation: fill-pulse 2s ease-in-out infinite;
+  transition: all 0.2s ease;
+}
+.btn-fill:hover {
+  background: rgba(0,177,187,0.2) !important;
+  transform: scale(1.05);
+}
+
+.blue-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='white' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 8px center !important;
+  padding-right: 22px !important;
+}
+
+/* 카드 내부 인풋 배경 흰색 */
+.asset-card input {
+  background: #fff !important;
+}
+.asset-card input.strategy-applied {
+  background: #00b1bb !important;
+  border-color: #00b1bb !important;
+  color: #fff !important;
+}
+
+/* PC: 기본 정보 입력 라벨 고정 너비로 인풋 시작점 정렬 */
+@media (min-width: 769px) {
+  .sim-input-row > span:first-child {
+    flex: 0 0 140px !important;
+    min-width: 140px !important;
+    text-align: right !important;
+  }
+}
+
 @media (max-width: 768px) {
 
   /* 텍스트 크기 자동 조정 방지 */
