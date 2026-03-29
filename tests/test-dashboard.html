@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>탈출로드맵 테스트 대시보드</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-card: #1a1d27;
+    --bg-card-hover: #222633;
+    --border: #2a2e3d;
+    --text: #e4e6ed;
+    --text-dim: #8b8fa3;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --orange: #f97316;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+    --teal: #00b1bb;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 24px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .subtitle { color: var(--text-dim); font-size: 14px; margin-bottom: 32px; }
+  .subtitle code { background: #222633; padding: 2px 8px; border-radius: 4px; font-size: 13px; color: var(--green); }
+  .subtitle .fail-code { color: var(--red); }
+
+  /* Stats */
+  .stats-bar { display: flex; gap: 16px; margin-bottom: 32px; flex-wrap: wrap; }
+  .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; min-width: 140px; flex: 1; }
+  .stat-card .label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .stat-card .value { font-size: 28px; font-weight: 700; }
+  .stat-card .value.total { color: var(--accent); }
+  .stat-card .value.pass { color: var(--green); }
+  .stat-card .value.fail { color: var(--red); }
+  .stat-card .value.pending { color: var(--text-dim); }
+
+  /* Progress */
+  .progress-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; margin-bottom: 32px; }
+  .progress-header { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: var(--text-dim); }
+  .progress-bar { height: 8px; background: #2a2e3d; border-radius: 4px; overflow: hidden; display: flex; }
+  .progress-bar .pass-bar { background: var(--green); transition: width 0.3s; }
+  .progress-bar .fail-bar { background: var(--red); transition: width 0.3s; }
+
+  /* Filters */
+  .filters { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+  .filter-btn { padding: 6px 16px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-dim); font-size: 13px; cursor: pointer; transition: all 0.2s; }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* Cards */
+  .tc-grid { display: grid; gap: 16px; }
+  .tc-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.2s; }
+  .tc-card:hover { border-color: #3b4460; }
+  .tc-card.hidden { display: none; }
+  .tc-header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; cursor: pointer; user-select: none; }
+  .tc-header:hover { background: var(--bg-card-hover); }
+  .tc-num { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: #2a2e3d; color: var(--text-dim); white-space: nowrap; }
+  .tc-title { font-weight: 600; font-size: 15px; flex: 1; }
+  .tc-point { font-size: 12px; color: var(--text-dim); flex: 1.5; }
+  .tc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+  .tag.l1 { background: #1e3a5f; color: #60a5fa; }
+  .tag.l2 { background: #1a3d2e; color: #4ade80; }
+  .tag.l3 { background: #3b1f54; color: #c084fc; }
+  .tag.extra { background: #3b2f1a; color: #fbbf24; }
+  .tag.debt { background: #3b1a1a; color: #f87171; }
+  .tag.event { background: #1a3b3b; color: #5eead4; }
+  .tc-expect { font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .tc-expect.expect-pass { color: var(--green); }
+  .tc-expect.expect-fail { color: var(--red); }
+  .tc-expect.expect-maybe { color: var(--yellow); }
+  .tc-result-badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 6px; cursor: pointer; border: none; transition: all 0.15s; }
+  .tc-result-badge.none { background: #2a2e3d; color: var(--text-dim); }
+  .tc-result-badge.pass { background: #14532d; color: #4ade80; }
+  .tc-result-badge.fail { background: #450a0a; color: #fca5a5; }
+  .expand-icon { color: var(--text-dim); transition: transform 0.2s; font-size: 18px; }
+  .tc-card.open .expand-icon { transform: rotate(180deg); }
+
+  /* Detail */
+  .tc-detail { display: none; border-top: 1px solid var(--border); }
+  .tc-card.open .tc-detail { display: block; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .detail-left { padding: 20px; border-right: 1px solid var(--border); }
+  .detail-right { padding: 20px; }
+  @media (max-width: 900px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .detail-left { border-right: none; border-bottom: 1px solid var(--border); }
+    .tc-point { display: none; }
+  }
+  .detail-section h3 { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .detail-table { width: 100%; font-size: 13px; }
+  .detail-table td { padding: 5px 0; vertical-align: top; }
+  .detail-table td:first-child { color: var(--text-dim); width: 130px; white-space: nowrap; }
+  .detail-table td:last-child { font-weight: 500; }
+  .detail-table .highlight { color: var(--cyan); font-weight: 600; }
+  .detail-table .none-val { color: #555; font-style: italic; }
+
+  /* Checklist */
+  .checklist { list-style: none; }
+  .checklist li { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; font-size: 13px; }
+  .checklist input[type="checkbox"] { accent-color: var(--green); margin-top: 3px; width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }
+  .checklist li.checked { color: var(--text-dim); text-decoration: line-through; }
+
+  /* Failure Card */
+  .fail-card {
+    margin-top: 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #3b1a1a;
+  }
+  .fail-card-header {
+    background: linear-gradient(135deg, #dc2626 0%, #F04452 50%, #f87171 100%);
+    padding: 16px;
+    color: #fff;
+  }
+  .fail-card-header .fail-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .fail-card-header .fail-desc { font-size: 12px; opacity: 0.9; line-height: 1.6; }
+  .fail-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: var(--bg-card);
+  }
+  .fail-metric {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .fail-metric:first-child { border-right: 1px solid var(--border); }
+  .fail-metric .metric-label { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+  .fail-metric .metric-value { font-size: 15px; font-weight: 700; }
+  .fail-metric .metric-value.red { color: var(--red); }
+  .fail-reasons {
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+  }
+  .fail-reasons .reason-title { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; }
+  .fail-reasons .reason-item {
+    font-size: 12px;
+    color: #fca5a5;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .fail-reasons .reason-item::before { content: '!'; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; background: #450a0a; color: #f87171; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+  /* Success Card */
+  .success-card {
+    margin-top: 16px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #14532d;
+  }
+  .success-card-header {
+    background: var(--teal);
+    padding: 16px;
+    color: #fff;
+  }
+  .success-card-header .success-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .success-card-header .success-desc { font-size: 12px; opacity: 0.9; line-height: 1.6; }
+  .success-summary {
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+  }
+  .success-summary .summary-item {
+    font-size: 12px;
+    color: #86efac;
+    padding: 3px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .success-summary .summary-item::before { content: '✓'; color: var(--green); font-weight: 700; flex-shrink: 0; }
+
+  /* Strategy Card */
+  .strategy-section {
+    margin-top: 16px;
+    border-radius: 10px;
+    border: 1px solid #1a3b3b;
+    overflow: hidden;
+  }
+  .strategy-header {
+    background: linear-gradient(135deg, #0d4f52, #00b1bb);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .strategy-header svg { flex-shrink: 0; }
+  .strategy-list { background: var(--bg-card); }
+  .strategy-item {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+  }
+  .strategy-item:first-child { border-top: none; }
+  .strategy-item .s-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #0d4f52;
+    color: var(--teal);
+    font-size: 11px;
+    font-weight: 700;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+  .strategy-item .s-title { font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; margin-bottom: 4px; }
+  .strategy-item .s-impact { font-size: 12px; color: var(--teal); margin-bottom: 4px; }
+  .strategy-item .s-advice { font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--green); color: #000;
+    padding: 12px 20px; border-radius: 8px;
+    font-size: 14px; font-weight: 600;
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.3s; z-index: 100;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<h1>탈출로드맵 테스트 대시보드</h1>
+<p class="subtitle">
+  판정: <code>FIRE 성공</code> 매년 남는금액 &ge; 0 &nbsp;|&nbsp; <code class="fail-code">FIRE 실패</code> 특정 나이에서 남는금액 &lt; 0
+</p>
+
+<div class="stats-bar">
+  <div class="stat-card"><div class="label">전체</div><div class="value total" id="statTotal">22</div></div>
+  <div class="stat-card"><div class="label">성공</div><div class="value pass" id="statPass">0</div></div>
+  <div class="stat-card"><div class="label">실패</div><div class="value fail" id="statFail">0</div></div>
+  <div class="stat-card"><div class="label">미확인</div><div class="value pending" id="statPending">22</div></div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-header"><span>진행률</span><span id="progressPct">0%</span></div>
+  <div class="progress-bar">
+    <div class="pass-bar" id="passBar" style="width:0%"></div>
+    <div class="fail-bar" id="failBar" style="width:0%"></div>
+  </div>
+</div>
+
+<div class="filters">
+  <button class="filter-btn active" data-filter="all">전체 (22)</button>
+  <button class="filter-btn" data-filter="pending">미확인</button>
+  <button class="filter-btn" data-filter="pass">성공</button>
+  <button class="filter-btn" data-filter="fail">실패</button>
+  <button class="filter-btn" data-filter="l1">1층 국민연금</button>
+  <button class="filter-btn" data-filter="l2">2층 퇴직연금</button>
+  <button class="filter-btn" data-filter="l3">3층 개인연금</button>
+  <button class="filter-btn" data-filter="extra">추가자산</button>
+  <button class="filter-btn" data-filter="debt">부채</button>
+  <button class="filter-btn" data-filter="no-pension">연금 없음</button>
+</div>
+
+<div class="tc-grid" id="tcGrid"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const TC_DATA = [
+  {
+    id: '01', title: '사회초년생 (최소 입력)', expectResult: 'fail',
+    expectText: '55~65세 무소득 10년',
+    point: '연금만으로 생활 가능한지, 자산 고갈 시점 확인',
+    tags: ['l1'],
+    fields: {
+      '현재 나이': '25', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '200만원', '75세 이후 생활비': '140만원',
+      '국민연금 개시': '65세', '월 국민연금': '50만원',
+      '퇴직연금': null, '개인연금': null, '추가자산': null, '부채': '0'
+    },
+    checks: [
+      '시뮬레이션 정상 실행됨',
+      '55~65세 구간: 소득 0원, 자산 없어 즉시 적자',
+      '65세 이후 국민연금 50만원 수령 시작 확인',
+      '생활비 200만원 vs 연금 50만원 → 매년 약 1,800만원 적자',
+      '예상 실패 나이: 55세 (첫 해부터 적자)'
+    ],
+    failCard: {
+      title: '55세부터 지출이 수입을 추월하기 시작해요.',
+      desc: '55세에 은퇴하면 국민연금 수령 전(55~64세) 10년 동안 자산이 버틸 수 있는 힘이 급격히 약해집니다.',
+      failAge: 55,
+      deficit: '약 2,400만원',
+      hardestAge: '55세 (첫 해부터 적자)',
+      reasons: ['자산소득 부족 (연 0만원, 생활비의 0%)', '수입 부족으로 지출을 감당할 수 없습니다']
+    },
+    strategy: [
+      { title: '은퇴 10년 연기 (55→65세)', impact: '10년간 추가소득 + 복리 성장', advice: '국민연금 수령까지 공백이 사라집니다.' },
+      { title: '추가 저축 확보', impact: '예적금/ISA에 은퇴 전 목표 자산 마련', advice: '월 50만원씩이라도 자동이체 설정하세요.' },
+      { title: '연금저축 신규 가입', impact: '2·3층 연금이 없으므로 지금 가입이 시급', advice: '연금저축펀드 계좌 개설, 월 50만원부터 시작.' }
+    ]
+  },
+  {
+    id: '02', title: '30대 직장인 기본형', expectResult: 'fail',
+    expectText: '55~65세 공백기, 자산 부족',
+    point: '기본적인 3층 연금 구조 테스트',
+    tags: ['l1','l2','l3'],
+    fields: {
+      '현재 나이': '33', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '80만원',
+      '퇴직연금': 'DC 3,000만원 / 수익률 5%',
+      '개인연금': '연금저축 2,000만원 / 수익률 5%',
+      '추가자산': null, '부채': '0'
+    },
+    checks: [
+      'DC 3,000만 + 연금저축 2,000만 → 은퇴 시 복리 성장 금액 확인',
+      '55~65세 공백기: 퇴직연금/개인연금 인출로 버티는지',
+      '65세 이후 국민연금 80만원 수령 반영',
+      '예상 실패 나이: 60~65세 사이 (자산 소진)'
+    ],
+    failCard: {
+      title: '60세 전후로 자산이 바닥나기 시작합니다.',
+      desc: '22년간 복리 성장한 퇴직연금+개인연금으로 5~6년은 버티지만, 국민연금 전에 소진됩니다.',
+      failAge: '60~62',
+      deficit: '약 2,400만원',
+      hardestAge: '63세 (연금 소진 직후)',
+      reasons: ['자산소득 부족', '국민연금 미수령 (65세 예정)']
+    },
+    strategy: [
+      { title: '은퇴 5년 연기 (55→60세)', impact: '공백기 10년→5년 단축 + 자산 복리 성장', advice: '복리의 마법으로 자산이 훨씬 단단해집니다.' },
+      { title: '월 생활비 50만원 절감', impact: '35년간 약 2.1억 절약', advice: 'OTT 구독, 보장성 보험 정리부터 시작하세요.' },
+      { title: 'ISA/해외직투 추가 자산 확보', impact: '브릿지 자금으로 공백기 커버', advice: '월 자동이체로 인덱스 ETF 적립 시작.' }
+    ]
+  },
+  {
+    id: '03', title: '40대 맞벌이 고자산', expectResult: 'maybe',
+    expectText: '성공 또는 후반부 실패',
+    point: '다중 계좌 + 부채 상환 + 높은 생활비',
+    tags: ['l1','l2','l3','extra','debt'],
+    fields: {
+      '현재 나이': '45', '희망 은퇴 나이': '55', '몇 세까지': '95', '물가상승률': '2.5%',
+      '75세 이전 생활비': '500만원', '75세 이후 생활비': '350만원',
+      '국민연금 개시': '65세', '월 국민연금': '120만원',
+      '퇴직연금': 'DB 2억(0%) / IRP 5,000만(5%)',
+      '개인연금': '연금저축 5,000만원 / 5%',
+      '추가자산': 'ISA 5,000만(5%) / 해외직투 1억(7%)',
+      '부채': '1억 / 월100만 / 60세 종료'
+    },
+    checks: [
+      'DB(0%) + IRP(5%) 가중평균 정상',
+      '인출 순서: 예적금→ISA→해외 순',
+      '부채 월 100만 상환 60세까지 반영',
+      '물가 2.5% 생활비 증가 패턴',
+      '해외직투 배당 + 매도 확인'
+    ],
+    failCard: {
+      title: '생활비 500만원이 자산을 빠르게 갉아먹습니다.',
+      desc: '높은 생활비(연 6,000만)에 부채 상환까지 겹치면서 자산 소진이 가속됩니다.',
+      failAge: '70~75',
+      deficit: '약 3,000만원',
+      hardestAge: '55~60세 (부채+생활비 이중 부담)',
+      reasons: ['생활비 과다 (연 6,000만원)', '부채 상환 부담 (월 100만)']
+    },
+    strategy: [
+      { title: '월 100만원 생활비 절감 (500→400만)', impact: '40년간 약 4.8억 절약', advice: '고정비 다이어트가 핵심입니다.' },
+      { title: '부채 조기 상환', impact: '이자 절감 + 현금흐름 개선', advice: '금리 높은 대출부터 우선 상환.' },
+      { title: '수익률 2%p 상향', impact: '복리로 자산 수명 5~10년 연장', advice: '연 1~2회 리밸런싱만으로 충분.' }
+    ]
+  },
+  {
+    id: '04', title: '50대 은퇴 임박 (조기수령)', expectResult: 'pass',
+    expectText: '자산 충분',
+    point: '국민연금 조기수령(63세) 감액 확인',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '53', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '350만원', '75세 이후 생활비': '245만원',
+      '국민연금 개시': '63세 (조기)', '월 국민연금': '100만원',
+      '퇴직연금': 'DC 1.5억 / 수익률 4%',
+      '개인연금': '연금저축 8,000만원 / 4%',
+      '추가자산': '예적금 2억 / 수익률 3%',
+      '부채': '0'
+    },
+    checks: [
+      '국민연금 63세 → 조기수령 감액 -12% 확인',
+      '55~63세: 예적금 2억 + 퇴직연금 인출로 버티기',
+      '세금: 55세 미만 16.5% vs 55~69세 5.5%'
+    ],
+    successCard: {
+      title: '든든한 계획이 완성되었어요.',
+      desc: '55세에 은퇴하더라도 63세부터 국민연금이 들어오고, 퇴직연금과 예적금이 빈 자리를 채워줍니다.',
+      points: [
+        '예적금 2억 + 퇴직연금 1.5억으로 8년 공백기 커버',
+        '63세부터 국민연금 수령으로 안정화',
+        '90세까지 매년 현금흐름 플러스 유지'
+      ]
+    },
+    strategy: [
+      { title: '수익률 1%p 상향', impact: '복리 효과로 최종 자산 약 15% 증가', advice: '인덱스 ETF + 배당 재투자가 효과적.' },
+      { title: '국민연금 1년 연기 (63→64세)', impact: '월 수령액 7.2% 증가 (종신)', advice: '다른 자산으로 1년 더 버틸 수 있다면 유리.' }
+    ]
+  },
+  {
+    id: '05', title: '국민연금 연기수령 70세', expectResult: 'maybe',
+    expectText: '55~70세 15년 공백',
+    point: '연기수령 +36% 증액 및 공백기 자산소진 확인',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '48', '희망 은퇴 나이': '55', '몇 세까지': '95', '물가상승률': '2%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '70세 (연기)', '월 국민연금': '130만원',
+      '퇴직연금': 'IRP 1억 / 수익률 5%',
+      '개인연금': '연금보험 5,000만원 / 4%',
+      '추가자산': 'ISA 1억 / 수익률 5%',
+      '부채': '0'
+    },
+    checks: [
+      '70세 수령 → +36% 증액 (월 ~177만원)',
+      '55~70세 15년: IRP+ISA로 충당 가능한지',
+      '연금보험 수익률 4% 반영',
+      '연기 이득 vs 15년 공백 비교'
+    ],
+    failCard: {
+      title: '15년 공백기 동안 자산이 바닥날 수 있습니다.',
+      desc: '70세 수령 시 +36% 증액은 매력적이지만, 55~70세 15년간 IRP 1억 + ISA 1억으로 연 3,600만 생활비를 감당하기 어렵습니다.',
+      failAge: '62~65',
+      deficit: '약 2,000만원',
+      hardestAge: '65세 (자산 소진 직전)',
+      reasons: ['자산소득 부족', '국민연금 미수령 (70세 예정)']
+    },
+    strategy: [
+      { title: '국민연금 65세 정상수령으로 변경', impact: '공백기 15년→10년 단축', advice: '+36% 증액보다 공백기 줄이는 게 안전할 수 있습니다.' },
+      { title: '은퇴 3년 연기 (55→58세)', impact: '3년간 추가 소득 + 자산 성장', advice: '연기 기간만큼 복리가 일해줍니다.' },
+      { title: '추가 저축 확보', impact: '브릿지 자금으로 공백기 커버', advice: 'ISA에 월 자동이체로 목표 잔액 채우기.' }
+    ]
+  },
+  {
+    id: '06', title: '60대 이미 은퇴', expectResult: 'pass',
+    expectText: '자산 3억+연금',
+    point: '현재나이=은퇴나이, 즉시 시뮬레이션',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '62', '희망 은퇴 나이': '62', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '250만원', '75세 이후 생활비': '175만원',
+      '국민연금 개시': '65세', '월 국민연금': '90만원',
+      '퇴직연금': 'IRP 2억 / 수익률 3%',
+      '개인연금': '연금저축 1억 / 3%',
+      '추가자산': '예적금 1억 / 수익률 2%',
+      '부채': '0'
+    },
+    checks: [
+      '현재나이=은퇴나이(62세) → 즉시 시작',
+      '시작년도 자동 계산 (현재 연도)',
+      '62~65세: IRP+연금저축+예적금으로 3년 버티기',
+      '65세 이후: 국민연금 90만원 수령으로 안정화'
+    ],
+    successCard: {
+      title: '든든한 계획이 완성되었어요.',
+      desc: '62세에서 즉시 시작하더라도 65세부터 국민연금이 뒷받침해주고, 연금계좌 4억이 안정적 현금흐름을 유지합니다.',
+      points: [
+        '3년 공백기(62~65세): 자산 4억으로 충분히 커버',
+        '65세부터 국민연금 연 1,080만원 추가',
+        '90세까지 현금흐름 플러스 유지'
+      ]
+    },
+    strategy: [
+      { title: '국민연금 1년 연기 (65→66세)', impact: '월 수령액 7.2% 증가 (종신)', advice: '자산 여유가 있으므로 연기가 유리.' },
+      { title: '생활비 절감', impact: '최종 잔여 자산 증가', advice: '안전 마진을 더 확보할 수 있습니다.' }
+    ]
+  },
+  {
+    id: '07', title: '주택연금 활용', expectResult: 'maybe',
+    expectText: '58~60 공백+부채',
+    point: '주택연금 개시 전후 현금흐름 차이',
+    tags: ['l1','l2','extra','debt'],
+    fields: {
+      '현재 나이': '50', '희망 은퇴 나이': '58', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '100만원',
+      '퇴직연금': 'DC 8,000만원 / 4%',
+      '개인연금': null,
+      '추가자산': '주택연금 60세 시작 / 월 100만원',
+      '부채': '5,000만 / 월50만 / 63세 종료'
+    },
+    checks: [
+      '주택연금 60세 시작 월 100만 수령 반영',
+      '58~60세 부채 상환+생활비 → 자산 급감',
+      '60세 이후 주택연금으로 현금흐름 개선',
+      '63세 부채 종료 후 지출 감소 반영'
+    ],
+    failCard: {
+      title: '58~60세 구간이 가장 위험합니다.',
+      desc: '주택연금 시작 전 2년간 생활비+부채 상환으로 자산이 급감합니다. 60세 이후 안정화되지만 공백기가 관건.',
+      failAge: '59~60',
+      deficit: '약 2,500만원',
+      hardestAge: '59세 (주택연금 직전)',
+      reasons: ['부채 상환 부담 (월 50만)', '주택연금 미개시']
+    },
+    strategy: [
+      { title: '은퇴 2년 연기 (58→60세)', impact: '주택연금과 동시 시작으로 공백 제거', advice: '은퇴와 주택연금 시작을 맞추세요.' },
+      { title: '부채 조기 상환', impact: '이자 절감 + 현금흐름 개선', advice: '은퇴 전 부채 정리가 최우선.' }
+    ]
+  },
+  {
+    id: '08', title: '비정기 지출 다수', expectResult: 'maybe',
+    expectText: '1.7억 비정기 지출',
+    point: '비정기 대형 지출이 자산 고갈에 미치는 영향',
+    tags: ['l1','l2','l3','extra','event'],
+    fields: {
+      '현재 나이': '50', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '100만원',
+      '퇴직연금': 'IRP 1.5억 / 5%',
+      '개인연금': '연금저축 5,000만원 / 5%',
+      '추가자산': '예적금 3억 / 수익률 3%',
+      '부채': '0',
+      '비정기 지출': '57세 결혼5천만 / 58세 차량4천만 / 60세 결혼5천만 / 70세 의료3천만'
+    },
+    checks: [
+      '57세 결혼 5,000만원 반영',
+      '58세 차량 4,000만원 반영',
+      '60세 결혼 5,000만원 반영',
+      '70세 의료 3,000만원 반영',
+      '비정기 총 1.7억 해당 연도에 일시 차감',
+      '연속 대형 지출(57~60)이 자산 고갈 가속화하는지'
+    ],
+    failCard: {
+      title: '57~60세 연속 대형 지출이 자산을 급감시킵니다.',
+      desc: '3년간 1.4억이 빠져나가며 자산이 급격히 줄어듭니다. 예적금 3억이 비정기 지출 흡수에 핵심.',
+      failAge: '65~70',
+      deficit: '약 2,000만원',
+      hardestAge: '60세 (두 번째 결혼자금 직후)',
+      reasons: ['비정기 지출 과다 (3년간 1.4억)', '자산 고갈 위험']
+    },
+    strategy: [
+      { title: '비정기 지출 분산/축소', impact: '연간 자산 감소폭 완화', advice: '자녀 결혼 비용 축소 또는 분할 지원 검토.' },
+      { title: '은퇴 3년 연기 (55→58세)', impact: '비정기 지출 기간에 소득 유지', advice: '대형 지출 시기에 수입이 있으면 안전합니다.' },
+      { title: '추가 저축 확보', impact: '비정기 지출 전용 별도 예비비', advice: '목적별 계좌 분리로 관리하세요.' }
+    ]
+  },
+  {
+    id: '09', title: '적립식 입력 모드', expectResult: 'pass',
+    expectText: '25년 복리 성장',
+    point: '적립식 모드 복리 계산 정확성 확인',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '30', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '250만원', '75세 이후 생활비': '175만원',
+      '국민연금 개시': '65세', '월 국민연금': '60만원',
+      '퇴직연금': 'DC 적립식: 현재500만 / 연300만 / 5%',
+      '개인연금': '연금저축 적립식: 현재200만 / 연600만 / 5%',
+      '추가자산': 'ISA 적립식: 현재100만 / 연400만 / 5%',
+      '부채': '0'
+    },
+    checks: [
+      'DC: 500만+연300만×25년×5% → 은퇴 시 약 1.6억',
+      '연금저축: 200만+연600만×25년×5% → 약 2.9억',
+      'ISA: 100만+연400만×25년×5% → 약 1.95억 (한도 주의: 1인 1억 캡)',
+      'ISA 한도 초과 시 경고 표시 또는 1억 캡 적용 확인',
+      '복리 공식: FV = PV×(1+r)^n + PMT×((1+r)^n-1)/r'
+    ],
+    successCard: {
+      title: '든든한 계획이 완성되었어요.',
+      desc: '25년간 적립식 투자의 복리 효과로 은퇴 시 상당한 자산이 형성됩니다.',
+      points: [
+        '25년 복리 성장으로 은퇴 시 자산 대폭 증가',
+        '3층 연금 + ISA가 안정적 현금흐름 제공',
+        'ISA 1인 1억 한도 캡 동작 확인 필요'
+      ]
+    },
+    strategy: [
+      { title: '수익률 1%p 상향', impact: '25년 복리 → 최종 자산 약 20% 증가', advice: '장기일수록 수익률 차이가 극대화됩니다.' },
+      { title: '생활비 절감 여유분 확인', impact: '월 생활비 300만원까지 가능한지', advice: '성공했으니 여유 범위 내에서 조정 가능.' }
+    ]
+  },
+  {
+    id: '10', title: '물가 5% 스트레스', expectResult: 'fail',
+    expectText: '물가 ≥ 수익률',
+    point: '물가상승률이 수익률과 같을 때 자산 급소진',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '40', '희망 은퇴 나이': '55', '몇 세까지': '95', '물가상승률': '5%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '100만원',
+      '퇴직연금': 'IRP 1억 / 5%',
+      '개인연금': '연금저축 5,000만원 / 5%',
+      '추가자산': '해외직투 1억 / 수익률 7%',
+      '부채': '0'
+    },
+    checks: [
+      '물가 5%: 55세 300만→65세 약489만→75세 약796만',
+      '수익률 5~7% vs 물가 5% → 실질 수익률 0~2%',
+      '자산 소진 기본(2%)보다 급격히 빠른지',
+      '실패 나이: 기본 대비 5~10년 일찍'
+    ],
+    failCard: {
+      title: '물가 5%가 자산을 녹이고 있습니다.',
+      desc: '수익률과 물가상승률이 같으면 실질 수익은 0%. 75세 생활비가 800만원에 육박하면서 자산이 급속히 소진됩니다.',
+      failAge: '65~70',
+      deficit: '약 5,000만원',
+      hardestAge: '75세 (물가 누적 정점)',
+      reasons: ['생활비 과다 (물가 누적으로 연 9,500만원)', '실질 수익률 0%로 자산 성장 불가']
+    },
+    strategy: [
+      { title: '은퇴 연기 + 실질 수익률 확보', impact: '물가 5%면 최소 7% 수익률 필요', advice: '인플레이션 헤지 자산(해외주식, 리츠) 비중 확대.' },
+      { title: '생활비 절감', impact: '기준 금액이 낮을수록 물가 영향 축소', advice: '고정비부터 절감하세요.' }
+    ]
+  },
+  {
+    id: '11', title: '최소 생활비 100만원', expectResult: 'fail',
+    expectText: '62세 DC 고갈, 65세까지 3년 공백',
+    point: '최소 생활비 경계값 테스트',
+    tags: ['l1','l2'],
+    fields: {
+      '현재 나이': '45', '희망 은퇴 나이': '55', '몇 세까지': '85', '물가상승률': '2%',
+      '75세 이전 생활비': '100만원 (최소)', '75세 이후 생활비': '100만원 (최소)',
+      '국민연금 개시': '65세', '월 국민연금': '80만원',
+      '퇴직연금': 'DC 5,000만원 / 4%',
+      '개인연금': null, '추가자산': null, '부채': '0'
+    },
+    checks: [
+      '최소값(100만원) 입력 경고/허용 확인',
+      '75세 이후도 100만원 직접 입력',
+      'DC 5,000만 → 55세 시 약 7,400만(4%×10년 복리)',
+      '55~62세: DC에서 연 1,200만+건보료 인출 → 62세쯤 고갈',
+      '62~65세: 자산 0, 연금 0 → 3년간 완전 적자',
+      '65세 이후: 국민연금 80만(연960만) vs 생활비 100만+물가(연~1,450만) → 연 490만 적자 지속'
+    ],
+    failCard: {
+      title: '62세에 DC가 고갈되고 65세까지 3년 공백이 발생합니다.',
+      desc: 'DC 7,400만으로 7년(55~62세)은 버티지만 고갈 후 국민연금까지 3년 무소득. 65세 이후에도 물가상승으로 연금만으로는 부족합니다.',
+      failAge: '62',
+      deficit: '약 1,200만원',
+      hardestAge: '62~64세 (DC 고갈 + 연금 미수령)',
+      reasons: ['자산소득 부족 (DC 고갈)', '국민연금 미수령 (65세 예정)', '65세 이후에도 물가상승으로 연금 < 생활비']
+    },
+    strategy: [
+      { title: '은퇴 3년 연기 (55→58세)', impact: 'DC가 3년 더 복리 성장 + 공백기 7년→4년', advice: '62세 고갈을 65세로 맞출 수 있습니다.' },
+      { title: '추가 자산 확보 (ISA/예적금)', impact: '62~65세 공백기 커버용 브릿지 자금', advice: '최소 3,600만원(3년×1,200만) 추가 필요.' },
+      { title: '연금저축 신규 가입', impact: '3층 연금 확보로 65세 이후 부족분 보전', advice: '월 30만원씩 10년 적립으로 약 4,400만원 확보.' }
+    ]
+  },
+  {
+    id: '12', title: 'ISA 한도 1억', expectResult: 'pass',
+    expectText: '성공 가능',
+    point: 'ISA 1인 한도(1억) 상한 동작 확인',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '40', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '100만원',
+      '퇴직연금': 'IRP 5,000만원 / 5%',
+      '개인연금': '연금저축 3,000만원 / 5%',
+      '추가자산': 'ISA 1억 (한도 상한) / 5%',
+      '부채': '0'
+    },
+    checks: [
+      'ISA 1억 입력 시 경고 또는 정상 처리',
+      'ISA 인출 순서: 부족분 발생 시에만',
+      'ISA 수익률 5% 잔액 성장 확인'
+    ],
+    successCard: {
+      title: '든든한 계획이 완성되었어요.',
+      desc: 'ISA 1억 상한 입력이 정상 처리되고, 연금+ISA 자산이 안정적 현금흐름을 제공합니다.',
+      points: ['ISA 한도 상한 정상 동작', 'ISA 수익률 5% 복리 성장 반영']
+    },
+    strategy: [
+      { title: '수익률 1%p 상향', impact: 'ISA 비과세 혜택 극대화', advice: '배당 재투자로 복리 효과 증가.' }
+    ]
+  },
+  {
+    id: '13', title: '부채 과다 + 낮은 자산', expectResult: 'fail',
+    expectText: '월 상환 200만 > 수입',
+    point: '부채 상환 > 생활비, 조기 자산 고갈',
+    tags: ['l1','l2','extra','debt'],
+    fields: {
+      '현재 나이': '48', '희망 은퇴 나이': '55', '몇 세까지': '85', '물가상승률': '2%',
+      '75세 이전 생활비': '250만원', '75세 이후 생활비': '175만원',
+      '국민연금 개시': '65세', '월 국민연금': '70만원',
+      '퇴직연금': 'DC 3,000만원 / 4%',
+      '개인연금': null,
+      '추가자산': '예적금 5,000만원 / 2%',
+      '부채': '3억 / 월200만 / 70세 종료'
+    },
+    checks: [
+      '월 부채200만 + 생활비250만 = 월450만 지출',
+      '자산 8,000만으로 약 1.5년 → 즉시 적자',
+      '70세 부채 완료 후 지출 급감 → 버틸 수 있는지',
+      '예상 실패 나이: 56~57세'
+    ],
+    failCard: {
+      title: '56세부터 자산이 완전히 바닥납니다.',
+      desc: '월 450만원(생활비+부채)이 나가는데, 자산은 8,000만원뿐. 1.5년 만에 고갈됩니다.',
+      failAge: 56,
+      deficit: '약 5,400만원',
+      hardestAge: '56세 (자산 고갈)',
+      reasons: ['부채 상환 과다 (월 200만, 지출의 44%)', '자산소득 부족 (연 0원)', '수입 부족으로 지출 감당 불가']
+    },
+    strategy: [
+      { title: '부채 조기 상환 (은퇴 전)', impact: '은퇴 후 월 200만원 부담 제거', advice: '은퇴 전에 부채를 최대한 줄이세요.' },
+      { title: '은퇴 10년 연기 (55→65세)', impact: '부채 상환 기간 소득 유지 + 자산 축적', advice: '부채가 큰 상태에서 은퇴는 위험합니다.' },
+      { title: '추가 저축 확보', impact: '최소 2억 이상 추가 자산 필요', advice: '부업, 보너스 등을 활용한 집중 저축.' }
+    ]
+  },
+  {
+    id: '14', title: '생명보험+개인연금 복합', expectResult: 'pass',
+    expectText: '다중 연금 수령',
+    point: '연금보험 + 생명보험연금 복합 수령',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '47', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '100만원',
+      '퇴직연금': 'IRP 1억 / 5%',
+      '개인연금': '연금저축 5,000만(5%) / 연금보험 3,000만(3%)',
+      '추가자산': '생명보험연금 60세 시작 / 월 80만원',
+      '부채': '0'
+    },
+    checks: [
+      '연금저축(5%) + 연금보험(3%) 별도 수익률',
+      '생명보험연금 60세 시작 월 80만',
+      '55~60세: IRP+연금저축+연금보험 인출',
+      '60세 이후: 생명보험 80만 추가 → 개선',
+      '65세 이후: 국민연금 100만 → 안정화'
+    ],
+    successCard: {
+      title: '든든한 계획이 완성되었어요.',
+      desc: '다중 연금이 시기별로 순차 개시되며 안정적 현금흐름을 만들어냅니다.',
+      points: [
+        '55~60세: 연금계좌 인출로 버티기',
+        '60세: 생명보험연금 월 80만원 추가',
+        '65세: 국민연금 월 100만원 추가 → 완전 안정화'
+      ]
+    },
+    strategy: [
+      { title: '수익률 1%p 상향', impact: '다중 계좌 복리 효과 극대화', advice: '리밸런싱만으로 충분히 도달 가능.' }
+    ]
+  },
+  {
+    id: '15', title: '100세 초장기 시뮬레이션', expectResult: 'maybe',
+    expectText: '50년 물가 누적',
+    point: '50년간 시뮬레이션, 초장기 물가 누적',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '35', '희망 은퇴 나이': '50', '몇 세까지': '100', '물가상승률': '2%',
+      '75세 이전 생활비': '350만원', '75세 이후 생활비': '245만원',
+      '국민연금 개시': '65세', '월 국민연금': '80만원',
+      '퇴직연금': 'DC 5,000만원 / 5%',
+      '개인연금': '연금저축 3,000만원 / 5%',
+      '추가자산': '해외직투 1억(7%) / ISA 5,000만(5%)',
+      '부채': '0'
+    },
+    checks: [
+      '50~100세 = 50년 시뮬레이션 정상 실행',
+      '물가 2%×50년 → 75세 이후 생활비 약 2배',
+      '100세까지 테이블/차트 정상 출력',
+      '마지막 행(100세) 잔액 확인'
+    ],
+    failCard: {
+      title: '50년은 물가의 무게를 이기기 어렵습니다.',
+      desc: '물가 2%×50년이면 생활비가 2.7배로 증가합니다. 해외직투 7%로 버티지만 90세 이후 위험.',
+      failAge: '85~90',
+      deficit: '약 3,000만원',
+      hardestAge: '90세 (물가 누적 정점)',
+      reasons: ['생활비 과다 (물가 50년 누적)', '자산 고갈 위험']
+    },
+    strategy: [
+      { title: '은퇴 5년 연기 (50→55세)', impact: '시뮬 기간 45년으로 단축 + 자산 성장', advice: '5년의 복리가 50년을 지탱합니다.' },
+      { title: '수익률 상향', impact: '물가 2% 이상의 실질 수익 확보', advice: '해외 인덱스 ETF 비중 확대.' }
+    ]
+  },
+  {
+    id: '16', title: 'FIRE족 40세 은퇴', expectResult: 'fail',
+    expectText: '배당 세후 1,522만 < 생활비 2,400만',
+    point: '40세 초조기 은퇴, 25년 공백기',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '35', '희망 은퇴 나이': '40', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '200만원', '75세 이후 생활비': '140만원',
+      '국민연금 개시': '65세', '월 국민연금': '40만원',
+      '퇴직연금': 'DC 2,000만원 / 5%',
+      '개인연금': '연금저축 1,000만원 / 5%',
+      '추가자산': '해외직투 3억(7%) / ISA 1억(5%)',
+      '부채': '0'
+    },
+    checks: [
+      '40~65세 25년 공백: 해외직투3억+ISA1억으로 버티기',
+      '해외직투 배당: 3억×6%=1,800만(세전) → 세후 1,522만 (15.4% 원천징수)',
+      '생활비 연 2,400만 vs 세후배당 1,522만 → 연 878만 적자',
+      'ISA 인출로 부족분 보전 → ISA 소진 시점 확인',
+      '65세 이후 국민연금 40만원 → 적자 지속'
+    ],
+    failCard: {
+      title: '세후 배당만으로는 생활비에 크게 못 미칩니다.',
+      desc: '해외직투 배당은 6%×세후84.6% = 세후 1,522만원뿐. 생활비 2,400만원과 연 878만원 격차가 25년간 누적됩니다.',
+      failAge: '55~60',
+      deficit: '약 1,500만원',
+      hardestAge: '55세 (ISA 소진 후, 물가 누적)',
+      reasons: ['해외배당 세후 1,522만 < 생활비 2,400만 (연 878만 적자)', '국민연금 40만원 너무 적음', '물가 2% 누적으로 적자 확대']
+    },
+    strategy: [
+      { title: '은퇴 5년 연기 (40→45세)', impact: '공백기 25년→20년, 자산 5년 추가 복리', advice: '5년이 가장 큰 차이를 만듭니다.' },
+      { title: '해외직투 5억으로 증액', impact: '세후배당 2,538만 → 생활비 거의 충당', advice: 'FIRE의 핵심: 세후배당 ≥ 생활비.' },
+      { title: '생활비 30만원 절감 (200→170만)', impact: '연 360만원 절약, 적자 878만→518만', advice: '작은 절감이 초장기에는 큰 차이.' }
+    ]
+  },
+  {
+    id: '17', title: '다중 퇴직연금 3개', expectResult: 'pass',
+    expectText: '자산 2.3억+연금',
+    point: 'DB+DC+IRP 3개 동시 운용',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '50', '희망 은퇴 나이': '58', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '350만원', '75세 이후 생활비': '245만원',
+      '국민연금 개시': '65세', '월 국민연금': '110만원',
+      '퇴직연금': 'DB 1.5억(0%) / DC 5,000만(4%) / IRP 3,000만(5%)',
+      '개인연금': '연금저축 5,000만원 / 5%',
+      '추가자산': '예적금 1억 / 수익률 3%',
+      '부채': '0'
+    },
+    checks: [
+      'DB(0%)+DC(4%)+IRP(5%) 3계좌 모두 표시',
+      'DB 수익률 0% 고정 (1.5억 그대로)',
+      '총 퇴직연금: 1.5억+5,000만+3,000만 = 2.3억',
+      '인출 시 세금(연령별 세율) 적용'
+    ],
+    successCard: {
+      title: '든든한 계획이 완성되었어요.',
+      desc: '퇴직연금 2.3억 + 예적금 1억 + 국민연금으로 90세까지 안정적 현금흐름을 유지합니다.',
+      points: [
+        '58~65세: 퇴직연금 2.3억으로 7년 공백기 커버',
+        '65세 이후: 국민연금 월 110만원 추가',
+        'DB+DC+IRP 3개 계좌 정상 처리'
+      ]
+    },
+    strategy: [
+      { title: '수익률 1%p 상향', impact: '2.3억에 대한 복리 극대화', advice: 'DB는 0% 고정이므로 DC+IRP에 집중.' },
+      { title: '국민연금 연기 검토', impact: '+7.2% 종신 증액', advice: '자산 여유가 있으므로 연기가 유리.' }
+    ]
+  },
+  {
+    id: '18', title: '무자산 연금만 의존', expectResult: 'fail',
+    expectText: '55~60세 무소득',
+    point: '55~60세 무소득 + 국민연금 조기 감액',
+    tags: ['l1'],
+    fields: {
+      '현재 나이': '55', '희망 은퇴 나이': '55', '몇 세까지': '85', '물가상승률': '2%',
+      '75세 이전 생활비': '200만원', '75세 이후 생활비': '140만원',
+      '국민연금 개시': '60세 (조기)', '월 국민연금': '80만원',
+      '퇴직연금': null, '개인연금': null, '추가자산': null, '부채': '0'
+    },
+    checks: [
+      '55~60세: 자산 0, 연금 0 → 즉시 적자',
+      '60세 조기수령 감액 -30% → 월 56만원',
+      '생활비 200만 vs 연금 56만 → 연 1,728만 적자',
+      '예상 실패 나이: 55세'
+    ],
+    failCard: {
+      title: '55세부터 즉시 적자입니다.',
+      desc: '자산 0원, 연금 0원 상태에서 월 200만원 생활비가 필요합니다. 60세 조기수령해도 월 56만원뿐.',
+      failAge: 55,
+      deficit: '약 2,400만원',
+      hardestAge: '55세 (첫 해부터)',
+      reasons: ['자산소득 부족 (연 0원)', '수입 부족으로 지출 감당 불가']
+    },
+    strategy: [
+      { title: '은퇴 연기 (필수)', impact: '소득 유지가 최우선', advice: '자산이 없는 상태에서 은퇴는 불가능합니다.' },
+      { title: '연금저축 신규 가입', impact: '2·3층 연금 확보', advice: '연금저축펀드 월 50만원부터 시작하세요.' },
+      { title: '추가 자산 축적', impact: 'ISA, 예적금 등 비과세 자산 확보', advice: '10년간 집중 저축으로 최소 1억 확보 목표.' }
+    ]
+  },
+  {
+    id: '19', title: '물가 0% 디플레이션', expectResult: 'pass',
+    expectText: '수익률 > 물가',
+    point: '인플레이션 없이 자산 수익만 쌓이는 낙관',
+    tags: ['l1','l2','l3','extra'],
+    fields: {
+      '현재 나이': '45', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '0%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '100만원',
+      '퇴직연금': 'DC 1억 / 5%',
+      '개인연금': '연금저축 5,000만원 / 5%',
+      '추가자산': '해외직투 1억 / 수익률 7%',
+      '부채': '0'
+    },
+    checks: [
+      '생활비 35년간 변동 없음 (300만 유지)',
+      '수익률 5~7% → 자산 계속 성장',
+      'TC-10(물가5%)과 결과 큰 차이',
+      '확실히 성공'
+    ],
+    successCard: {
+      title: '든든한 계획이 완성되었어요.',
+      desc: '물가 0%에서 수익률 5~7%는 실질 수익률 그 자체. 자산이 계속 성장합니다.',
+      points: [
+        '생활비 35년간 300만원 고정',
+        '자산 수익만 5~7% 순수 성장',
+        'TC-10(물가5%)과 극명한 차이 확인'
+      ]
+    },
+    strategy: [
+      { title: '여유 확인: 은퇴 앞당기기', impact: '자산이 충분하므로 조기 은퇴 가능', advice: '여유분으로 은퇴를 몇 년 앞당길 수 있는지 확인.' },
+      { title: '생활비 증액 가능 범위', impact: '월 400만원까지 가능한지', advice: '성공 시 자동 계산되는 여유 범위를 확인하세요.' }
+    ]
+  },
+  {
+    id: '20', title: '모든 항목 풀입력 (종합)', expectResult: 'maybe',
+    expectText: '부채+비정기 지출 큼',
+    point: '모든 입력 항목 사용, 종합 검증',
+    tags: ['l1','l2','l3','extra','debt','event'],
+    fields: {
+      '현재 나이': '45', '희망 은퇴 나이': '57', '몇 세까지': '95', '물가상승률': '3%',
+      '75세 이전 생활비': '400만원', '75세 이후 생활비': '280만원',
+      '국민연금 개시': '66세 (1년 연기)', '월 국민연금': '110만원',
+      '퇴직연금': 'DB 2억(0%) / IRP 5,000만(5%)',
+      '개인연금': '연금저축 5,000만(5%) / 연금보험 3,000만(3%)',
+      '추가자산': 'ISA 8천만(5%) / 해외 1.5억(7%) / 예적금 1억(3%) / 주택연금 65세 월120만 / 생명보험 60세 월50만',
+      '부채': '2억 / 월150만 / 65세 종료',
+      '비정기 지출': '58세 결혼5천만 / 60세 리모델링3천만 / 75세 의료2천만'
+    },
+    checks: [
+      '7개 섹션 모든 입력 정상 반영',
+      'DB+IRP 퇴직연금 2개 처리',
+      '연금저축+연금보험 2개 처리',
+      'ISA+해외+예적금+주택연금+생명보험 5개 자산',
+      '부채 2억, 월150만, 65세 종료 반영',
+      '비정기 3건(58,60,75세) 반영',
+      '물가 3%, 국민연금 66세 연기 +7.2%',
+      '인출 순서: 예적금→ISA→해외주식',
+      'CSV/Excel/JSON/텍스트 내보내기'
+    ],
+    failCard: {
+      title: '부채+비정기 지출이 자산을 압박합니다.',
+      desc: '월 150만 부채 상환 + 생활비 400만 + 물가 3% + 비정기 1억 → 자산이 빠르게 소진됩니다.',
+      failAge: '65~70',
+      deficit: '약 4,000만원',
+      hardestAge: '60세 (리모델링 3천만+부채 상환 겹침)',
+      reasons: ['생활비 과다 (연 4,800만+)', '부채 상환 부담 (월 150만)', '비정기 지출 과다']
+    },
+    strategy: [
+      { title: '은퇴 연기 + 부채 선정리', impact: '부채 상환 완료 후 은퇴', advice: '65세 부채 종료와 은퇴 시점을 맞추세요.' },
+      { title: '생활비 100만원 절감 (400→300만)', impact: '38년간 약 4.6억 절약', advice: '가장 확실한 전략입니다.' },
+      { title: '비정기 지출 분산', impact: '연간 충격 완화', advice: '한꺼번에 몰리는 지출을 분산하세요.' },
+      { title: '수익률 2%p 상향', impact: '물가 3% 초과하는 실질 수익 확보', advice: '해외 인덱스 ETF 비중 확대.' },
+      { title: '국민연금 연기 유지 (66세)', impact: '+7.2% 증액 (종신)', advice: '다른 자산으로 1년 공백 충당 가능.' }
+    ]
+  },
+  {
+    id: '21', title: '프리랜서 - 연금 없이 추가자산만', expectResult: 'maybe',
+    expectText: '세후배당 2,030만 < 생활비 3,000만',
+    point: '1~3층 연금 전무, 추가자산(6억)만으로 35년',
+    tags: ['extra','no-pension'],
+    fields: {
+      '현재 나이': '40', '희망 은퇴 나이': '55', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '250만원', '75세 이후 생활비': '175만원',
+      '국민연금 개시': '65세', '월 국민연금': '0원',
+      '퇴직연금': null, '개인연금': null,
+      '추가자산': '해외직투 4억(7%) / ISA 1억(5%) / 예적금 1억(3%)',
+      '부채': '0'
+    },
+    checks: [
+      '국민연금 0원 정상 처리',
+      '퇴직/개인연금 없음에서 시뮬 정상',
+      '해외배당: 4억×6%=2,400만(세전) → 세후 2,030만 (15.4% 원천징수)',
+      '생활비 연 3,000만 vs 세후배당 2,030만 → 연 970만 적자',
+      '부족분은 ISA→예적금 순 인출로 보전',
+      '65세 이후 국민연금 0원 → 추가자산만 계속 의존',
+      '75세 이후 175만 감소 시 적자폭 축소, 흑자 전환 여부'
+    ],
+    failCard: {
+      title: '세후 배당만으로는 생활비에 못 미칩니다.',
+      desc: '해외직투 배당 6%×세후84.6% = 연 2,030만원. 생활비 3,000만원과 연 970만원 격차를 ISA+예적금으로 보전해야 하며, 장기적으로 소진 위험이 있습니다.',
+      failAge: '70~75',
+      deficit: '약 1,500만원',
+      hardestAge: '70세 (ISA+예적금 소진 후)',
+      reasons: ['해외배당 세후 2,030만 < 생활비 3,000만', '연금 수입 0원', '물가 2% 누적으로 적자 확대']
+    },
+    strategy: [
+      { title: '연금저축 신규 가입', impact: '절세 혜택 + 연금 소득 확보', advice: '추가자산만 의존하면 세금 부담이 큽니다.' },
+      { title: '해외직투 6억으로 증액', impact: '세후배당 3,045만 → 생활비 충당', advice: '세후배당 ≥ 생활비가 FIRE의 핵심.' },
+      { title: '수익률 유지 관리', impact: '해외직투 배당 6% 유지 필수', advice: '리밸런싱과 배당 재투자 설정.' }
+    ]
+  },
+  {
+    id: '22', title: '상속자산 - 부동산+현금만', expectResult: 'maybe',
+    expectText: '50~55 공백+부채',
+    point: '연금 0원, 주택연금+현금만으로 생활',
+    tags: ['extra','debt','no-pension'],
+    fields: {
+      '현재 나이': '45', '희망 은퇴 나이': '50', '몇 세까지': '90', '물가상승률': '2%',
+      '75세 이전 생활비': '300만원', '75세 이후 생활비': '210만원',
+      '국민연금 개시': '65세', '월 국민연금': '0원',
+      '퇴직연금': null, '개인연금': null,
+      '추가자산': '주택연금 55세 월150만 / 예적금 3억(3%)',
+      '부채': '1억 / 월80만 / 60세 종료'
+    },
+    checks: [
+      '국민연금 0원, 퇴직/개인연금 없음 정상',
+      '50~55세: 예적금에서 월380만(생활비+부채) 인출',
+      '55세 주택연금 시작 → 월 150만 부담 경감',
+      '60세 부채 완료 → 월 300만으로 감소',
+      '예적금 소진 시점 (주택연금150 vs 생활비300)',
+      '75세 이후 210만 vs 주택연금 150만 → 월 60만 부족'
+    ],
+    failCard: {
+      title: '예적금 소진 후 주택연금만으로는 부족합니다.',
+      desc: '연금 0원, 주택연금 150만원만으로는 생활비 300만원을 감당하기 어렵습니다.',
+      failAge: '65~70',
+      deficit: '약 1,800만원',
+      hardestAge: '50~55세 (부채+생활비 이중 부담)',
+      reasons: ['연금 수입 0원', '주택연금 150만 < 생활비 300만', '부채 상환 부담']
+    },
+    strategy: [
+      { title: '연금저축 신규 가입 (필수)', impact: '2·3층 연금 확보', advice: '국민연금도 없으므로 연금저축이 생명줄입니다.' },
+      { title: '부채 조기 상환', impact: '은퇴 전 부채 정리', advice: '예적금 일부로 부채 선정리.' },
+      { title: '은퇴 연기 (50→55세)', impact: '주택연금과 동시 시작, 5년 추가 저축', advice: '5년간 소득으로 예적금을 더 쌓으세요.' }
+    ]
+  }
+];
+
+// State
+let testResults = {};
+
+function init() {
+  loadData();
+  renderCards();
+  updateStats();
+  setupFilters();
+}
+
+function renderCards() {
+  const grid = document.getElementById('tcGrid');
+  grid.innerHTML = '';
+  TC_DATA.forEach(tc => {
+    const result = testResults[tc.id] || {};
+    const status = result.status || 'none';
+    const card = document.createElement('div');
+    card.className = 'tc-card';
+    card.dataset.id = tc.id;
+    card.dataset.tags = tc.tags.join(',');
+    card.dataset.status = status;
+
+    const expectClass = tc.expectResult === 'pass' ? 'expect-pass' : tc.expectResult === 'fail' ? 'expect-fail' : 'expect-maybe';
+    const expectIcon = tc.expectResult === 'pass' ? '✅' : tc.expectResult === 'fail' ? '❌' : '⚠️';
+    const badgeClass = status;
+    const badgeText = status === 'pass' ? '✅ 성공' : status === 'fail' ? '❌ 실패' : '미확인';
+
+    const tagLabels = { l1:'1층 국민연금', l2:'2층 퇴직연금', l3:'3층 개인연금', extra:'추가자산', debt:'부채', event:'비정기지출', 'no-pension':'연금없음' };
+    const tagsHtml = tc.tags.map(t => `<span class="tag ${t}">${tagLabels[t]||t}</span>`).join('');
+
+    let fieldsHtml = '';
+    for (const [k, v] of Object.entries(tc.fields)) {
+      const val = v === null ? '<span class="none-val">없음</span>' : (v.includes('0원') || v === '0%' ? `<span class="highlight">${v}</span>` : v);
+      fieldsHtml += `<tr><td>${k}</td><td>${val}</td></tr>`;
+    }
+
+    const checksHtml = tc.checks.map((c, i) => {
+      const checked = result.checks?.[i] || false;
+      return `<li class="${checked?'checked':''}"><input type="checkbox" ${checked?'checked':''} onchange="toggleCheck('${tc.id}',${i},this)"><span>${c}</span></li>`;
+    }).join('');
+
+    // Fail or Success card
+    let resultCardHtml = '';
+    if (tc.failCard) {
+      const fc = tc.failCard;
+      resultCardHtml = `
+        <div class="fail-card">
+          <div class="fail-card-header">
+            <div class="fail-title">${fc.title}</div>
+            <div class="fail-desc">${fc.desc}</div>
+          </div>
+          <div class="fail-metrics">
+            <div class="fail-metric"><div class="metric-label">부족 금액 (연)</div><div class="metric-value red">${fc.deficit}</div></div>
+            <div class="fail-metric"><div class="metric-label">가장 어려운 시점</div><div class="metric-value">${fc.hardestAge}</div></div>
+          </div>
+          <div class="fail-reasons">
+            <div class="reason-title">실패 원인 분석</div>
+            ${fc.reasons.map(r => `<div class="reason-item">${r}</div>`).join('')}
+          </div>
+        </div>`;
+    }
+    if (tc.successCard) {
+      const sc = tc.successCard;
+      resultCardHtml = `
+        <div class="success-card">
+          <div class="success-card-header">
+            <div class="success-title">${sc.title}</div>
+            <div class="success-desc">${sc.desc}</div>
+          </div>
+          <div class="success-summary">
+            ${sc.points.map(p => `<div class="summary-item">${p}</div>`).join('')}
+          </div>
+        </div>`;
+    }
+
+    // Strategy section
+    let strategyHtml = '';
+    if (tc.strategy && tc.strategy.length > 0) {
+      strategyHtml = `
+        <div class="strategy-section">
+          <div class="strategy-header">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            즉시 탈출 전략 안내
+          </div>
+          <div class="strategy-list">
+            ${tc.strategy.map((s, i) => `
+              <div class="strategy-item">
+                <div class="s-title"><span class="s-num">${i+1}</span>${s.title}</div>
+                <div class="s-impact">${s.impact}</div>
+                <div class="s-advice">${s.advice}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`;
+    }
+
+    card.innerHTML = `
+      <div class="tc-header" onclick="toggleCard(this)">
+        <span class="tc-num">TC-${tc.id}</span>
+        <span class="tc-title">${tc.title}</span>
+        <span class="tc-point">${tc.point}</span>
+        <span class="tc-expect ${expectClass}">${expectIcon} 예상: ${tc.expectText}</span>
+        <button class="tc-result-badge ${badgeClass}" onclick="event.stopPropagation();cycleResult('${tc.id}',this)">${badgeText}</button>
+        <span class="expand-icon">&#9662;</span>
+      </div>
+      <div class="tc-detail">
+        <div class="detail-grid">
+          <div class="detail-left">
+            <div class="detail-section">
+              <h3>입력값</h3>
+              <table class="detail-table">${fieldsHtml}</table>
+            </div>
+            ${resultCardHtml}
+          </div>
+          <div class="detail-right">
+            <div class="detail-section">
+              <h3>레이어 구성</h3>
+              <div style="margin-bottom:16px">${tagsHtml}</div>
+              <h3>확인 체크리스트</h3>
+              <ul class="checklist">${checksHtml}</ul>
+            </div>
+            ${strategyHtml}
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function toggleCard(header) { header.closest('.tc-card').classList.toggle('open'); }
+
+function cycleResult(id, btn) {
+  const states = ['none','pass','fail'];
+  const labels = { none:'미확인', pass:'✅ 성공', fail:'❌ 실패' };
+  if (!testResults[id]) testResults[id] = {};
+  const cur = testResults[id].status || 'none';
+  const next = states[(states.indexOf(cur)+1) % states.length];
+  testResults[id].status = next;
+  btn.className = `tc-result-badge ${next}`;
+  btn.textContent = labels[next];
+  btn.closest('.tc-card').dataset.status = next;
+  updateStats();
+  saveData();
+}
+
+function toggleCheck(id, idx, cb) {
+  if (!testResults[id]) testResults[id] = {};
+  if (!testResults[id].checks) testResults[id].checks = {};
+  testResults[id].checks[idx] = cb.checked;
+  cb.closest('li').classList.toggle('checked', cb.checked);
+  saveData();
+}
+
+function updateStats() {
+  let pass=0, fail=0;
+  TC_DATA.forEach(tc => { const s=testResults[tc.id]?.status; if(s==='pass')pass++; if(s==='fail')fail++; });
+  const total=TC_DATA.length, pending=total-pass-fail, done=pass+fail;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPass').textContent = pass;
+  document.getElementById('statFail').textContent = fail;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('progressPct').textContent = Math.round(done/total*100)+'%';
+  document.getElementById('passBar').style.width = (pass/total*100)+'%';
+  document.getElementById('failBar').style.width = (fail/total*100)+'%';
+}
+
+function setupFilters() {
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.filter;
+      document.querySelectorAll('.tc-card').forEach(card => {
+        if (f==='all') { card.classList.remove('hidden'); return; }
+        if (['pending','pass','fail'].includes(f)) { card.classList.toggle('hidden', f==='pending' ? (card.dataset.status||'none')!=='none' : card.dataset.status!==f); return; }
+        if (f==='no-pension') { card.classList.toggle('hidden', !card.dataset.tags.includes('no-pension')); return; }
+        card.classList.toggle('hidden', !card.dataset.tags.includes(f));
+      });
+    });
+  });
+}
+
+const STORAGE_KEY = 'tc-dashboard-v2';
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ testResults, savedAt: new Date().toISOString() })); }
+function loadData() { try { const d = JSON.parse(localStorage.getItem(STORAGE_KEY)); if (d) testResults = d.testResults || {}; } catch(e){} }
+
+function showToast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1500); }
+
+init();
+</script>
+</body>
+</html>

@@ -62,7 +62,7 @@ function Tooltip({ text, children }: { text: string; children: React.ReactNode }
       ref={triggerRef}
       onMouseEnter={handleEnter}
       onMouseLeave={() => setShow(false)}
-      style={{ cursor: 'help' }}
+      style={{ cursor: 'help', fontSize: 'inherit' }}
     >
       {children}
       {show && createPortal(
@@ -91,6 +91,7 @@ interface CashFlowProps {
   onStrategyApplied?: () => void;
   onInputDirty?: () => void;
   triggerRecalc?: number;
+  initialTcData?: Record<string, any> | null;
 }
 
 interface InputValues {
@@ -243,7 +244,7 @@ interface SimulationRow {
   irregularExpense: number; // 비정기 지출
 }
 
-export function CashFlow({ isAmountHidden = false, onSimulationComplete, pendingStrategyChanges, autoRecalculate, onStrategyApplied, onInputDirty, triggerRecalc }: CashFlowProps) {
+export function CashFlow({ isAmountHidden = false, onSimulationComplete, pendingStrategyChanges, autoRecalculate, onStrategyApplied, onInputDirty, triggerRecalc, initialTcData }: CashFlowProps) {
   const [showResults, setShowResults] = useState(false);
   const isAdminUser = isAdmin();
   const [showFormulaModal, setShowFormulaModal] = useState(false);
@@ -1385,6 +1386,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     },
   ];
 
+
   const resetForm = () => {
     setInputs({ ...EMPTY_INPUTS });
     setShowResults(false);
@@ -1424,6 +1426,28 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     }
     onSimulationComplete?.({ results: [], isFireSuccess: true, assetDepletionAge: null });
   };
+
+  // 사이드바 TC 클릭 시 외부에서 데이터 직접 로드
+  const prevTcDataRef = useRef<Record<string, any> | null | undefined>(undefined);
+  useEffect(() => {
+    if (initialTcData && initialTcData !== prevTcDataRef.current) {
+      prevTcDataRef.current = initialTcData;
+      const merged = { ...EMPTY_INPUTS, ...initialTcData } as InputValues;
+      const thisYear = new Date().getFullYear();
+      if (merged.currentAge && merged.retirementStartAge) {
+        merged.startYear = thisYear + (merged.retirementStartAge - merged.currentAge);
+      }
+      setInputs(merged);
+      setSelectedPreset('');
+      setShowResults(false);
+      setResults([]);
+      setInputsDirty(false);
+      setAssetInputMode('direct');
+      setPensionInputMode('direct');
+      setAppliedFields({});
+      onSimulationComplete?.({ results: [], isFireSuccess: true, assetDepletionAge: null });
+    }
+  }, [initialTcData]);
 
   // 📥 CSV 다운로드
   const downloadCSV = () => {
@@ -1633,17 +1657,24 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
               </button>
               {presetDropdownOpen && (
                 <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, minWidth: '100%', width: 'max-content', background: '#3182F6', borderRadius: 10, boxShadow: '0 8px 24px rgba(49, 130, 246, 0.35)', zIndex: 100, overflow: 'hidden', padding: '4px 0' }}>
-                  {EXAMPLE_PRESETS.map((p, i) => (
-                    <div
-                      key={i}
-                      onClick={() => { loadPreset(i); setPresetDropdownOpen(false); }}
-                      style={{ padding: '7px 14px', fontSize: 13, fontWeight: 500, color: '#fff', cursor: 'pointer', transition: 'background 0.15s', background: selectedPreset === String(i) ? 'rgba(255,255,255,0.2)' : 'transparent', whiteSpace: 'nowrap' }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = selectedPreset === String(i) ? 'rgba(255,255,255,0.2)' : 'transparent')}
-                    >
-                      {p.label}
-                    </div>
-                  ))}
+                  {EXAMPLE_PRESETS.map((p, i) => {
+                    const isTC = p.label.startsWith('TC-');
+                    const prevIsTC = i > 0 && EXAMPLE_PRESETS[i-1].label.startsWith('TC-');
+                    const showDivider = isTC && !prevIsTC;
+                    return (
+                      <div key={i}>
+                        {showDivider && <div style={{ height: 1, background: 'rgba(255,255,255,0.2)', margin: '4px 10px' }} />}
+                        <div
+                          onClick={() => { loadPreset(i); setPresetDropdownOpen(false); }}
+                          style={{ padding: '7px 14px', fontSize: isTC ? 12 : 13, fontWeight: 500, color: isTC ? 'rgba(255,255,255,0.85)' : '#fff', cursor: 'pointer', transition: 'background 0.15s', background: selectedPreset === String(i) ? 'rgba(255,255,255,0.2)' : 'transparent', whiteSpace: 'nowrap' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = selectedPreset === String(i) ? 'rgba(255,255,255,0.2)' : 'transparent')}
+                        >
+                          {p.label}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1758,7 +1789,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
             <input type="number" value={inputs.currentAge} onBlur={handleNumberBlur} onChange={(e) => handleInputChange('currentAge', e.target.value)} style={{ width: 120, textAlign: 'right' as const, padding: '6px 10px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
           </div>
           <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, flex: 1, textAlign: 'right' as const }}><Tooltip text="은퇴 나이를 늦추면 결과가 크게 달라져요. ① 자산이 수익률로 더 오래 불어나고 ② 생활비를 쓰는 기간이 줄어들고 ③ 국민연금(65세) 수령까지 자산만으로 버텨야 하는 공백 기간이 짧아져요. 특히 55세 은퇴 시 65세까지 10년간 국민연금 없이 자산이 크게 소진되는 구간이 가장 위험해요.">희망 은퇴 나이 ⓘ</Tooltip></span>
+            <span style={{ fontSize: 15, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, flex: 1, textAlign: 'right' as const }}><Tooltip text="은퇴 나이를 늦추면 결과가 크게 달라져요. ① 자산이 수익률로 더 오래 불어나고 ② 생활비를 쓰는 기간이 줄어들고 ③ 국민연금(65세) 수령까지 자산만으로 버텨야 하는 공백 기간이 짧아져요. 특히 55세 은퇴 시 65세까지 10년간 국민연금 없이 자산이 크게 소진되는 구간이 가장 위험해요.">희망 은퇴 나이 ⓘ</Tooltip></span>
             {strategyBadge('retirementStartAge')}
             <input type="number" value={inputs.retirementStartAge} onBlur={handleNumberBlur} onChange={(e) => handleInputChange('retirementStartAge', e.target.value)} style={{ width: 120, textAlign: 'right' as const, padding: '6px 10px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)', ...appliedInputStyle('retirementStartAge') }} />
           </div>

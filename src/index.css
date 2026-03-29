@@ -7211,6 +7211,33 @@ button[style*="font-size: 20"]:hover {
   transform: scale(1.05);
 }
 
+/* 탈출 버튼 펄스 애니메이션 (모바일) */
+@keyframes escape-pulse {
+  0%, 100% { box-shadow: 0 2px 8px rgba(0,177,187,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(0,177,187,0); }
+}
+.btn-escape-pulse {
+  animation: escape-pulse 2s ease-in-out infinite;
+}
+.btn-escape-pulse:hover {
+  background: #009da6 !important;
+}
+
+/* 채운 금액으로 다시 계산하기 버튼 애니메이션 (PC only) */
+@keyframes recalc-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.recalc-btn-animate {
+  animation: recalc-fade-in 0.3s ease-out forwards;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.recalc-btn-animate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+}
+
 .blue-select {
   appearance: none !important;
   -webkit-appearance: none !important;
@@ -7506,6 +7533,13 @@ button[style*="font-size: 20"]:hover {
   .sim-input-row > span:first-child span {
     font-size: 15px !important;
   }
+  .sim-input-row > span:first-child span[style*="cursor"] {
+    font-size: 15px !important;
+  }
+  .sim-input-row > span:first-child {
+    font-size: 15px !important;
+    white-space: normal !important;
+  }
 
   /* 전략 반영 버튼: 모바일에서도 동일 스타일 */
   .apply-strategy-btn {
@@ -7572,6 +7606,7 @@ button[style*="font-size: 20"]:hover {
     right: auto !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
+    white-space: nowrap !important;
   }
 
   /* 프리셋 설명 세로 배치 */

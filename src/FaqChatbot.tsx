@@ -70,6 +70,18 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
       })
     : [];
 
+  // 검색어 하이라이트
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase()
+        ? <mark key={i} style={{ background: "#FEF08A", color: "#92400E", fontWeight: 700, borderRadius: 2, padding: "0 1px" }}>{part}</mark>
+        : part
+    );
+  };
+
   // 질문 리스트 아이템
   const QItem = ({ faq }: { faq: FaqItem }) => (
     <button onClick={() => selectFaq(faq)} className="faq-q-item" style={{
@@ -77,7 +89,7 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
       background: "none", border: "none", borderBottom: "1px solid var(--border-secondary, #f3f4f6)",
       cursor: "pointer", fontFamily: "inherit", textAlign: "left" as const, transition: "background 0.1s",
     }}>
-      <span style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.5 }}>{faq.question}</span>
+      <span style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.5 }}>{highlightMatch(faq.question, searchQuery)}</span>
       <ArrowRight size={14} color="var(--text-quaternary, #d1d5db)" style={{ flexShrink: 0, marginLeft: 8 }} />
     </button>
   );

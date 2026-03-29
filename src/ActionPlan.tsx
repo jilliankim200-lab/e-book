@@ -271,16 +271,16 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       const delayYears = Math.min(10, Math.max(2, Math.ceil(delayBudget / Math.max(1, analysis.avgLivingCost))));
       items.push({
         id: "retire-delay",
-        title: `평생 마르지 않는 샘물을 파는 시간: 은퇴 ${delayYears}년 연기`,
+        title: `은퇴 나이를 ${delayYears}년 늦추면?`,
         description: `지출은 ${formatKorean(delayYears * analysis.avgLivingCost)} 줄고, 은퇴 자산은 복리의 마법으로 더 단단해집니다.`,
         impact: `약 ${formatKorean(delayYears * analysis.avgLivingCost)} 지출 감소 + 복리 성장`,
         impactType: "positive",
         details: [
-          `${delayYears}년간 추가 소득 + 복리 성장`,
-          "국민연금 수령 시기까지의 간극도 줄어듭니다",
+          `월급을 ${delayYears}년 더 받고, 모아둔 돈도 계속 불어나요`,
+          "연금 받기 전 버텨야 할 기간도 짧아져요",
         ],
         advice: `${delayYears}년이라는 시간이 길게 느껴지시죠? 저도 그 무게를 잘 압니다. 하지만 이 ${delayYears}년은 단순히 '더 일하는 시간'이 아니라, 평생 마르지 않는 샘물을 파는 시간입니다. 자산이 스스로 불어날 시간을 벌어주면, 당신의 노후는 누구보다 단단해질 거예요.`,
-        actionTip: "현재 직무에서 스트레스를 줄일 수 있는 '안식월'이나 '보직 변경'을 고려해 보세요. 무작정 버티기보다 환경을 바꾸는 것이 핵심입니다.",
+        actionTip: "퇴근 후 루틴(운동, 취미)을 하나 만들어 번아웃을 관리하세요. 10년을 버티는 건 체력이 아니라 페이스 조절입니다. 본업 외 월 30~50만원의 소소한 부수입(블로그, 강의, 재능판매)을 만들어 두면, '언제든 그만둘 수 있다'는 심리적 여유가 생깁니다.",
         changes: [
           { field: 'retirementStartAge', value: 0, delta: delayYears, label: `은퇴 나이 +${delayYears}년` },
         ],
@@ -291,12 +291,12 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       const monthlyCut = Math.min(1500000, Math.max(300000, Math.ceil(livingBudget / Math.max(1, adjSimYears) / 12 / 100000) * 100000));
       items.push({
         id: "expense-cut",
-        title: `작은 구멍이 배를 가라앉힙니다: 월 ${(monthlyCut / 10000).toFixed(0)}만원 절감`,
+        title: `월 생활비를 ${(monthlyCut / 10000).toFixed(0)}만원 줄이면?`,
         description: `숨만 쉬어도 나가는 돈을 막으면, ${formatKorean(monthlyCut * 12 * adjSimYears)}이라는 거대한 방어막이 생깁니다.`,
         impact: `${adjSimYears}년간 약 ${formatKorean(monthlyCut * 12 * adjSimYears)} 절약`,
         impactType: "positive",
         details: [
-          `연간 절감액: ${formatAmount(monthlyCut * 12)}원`,
+          `매달 ${(monthlyCut / 10000).toFixed(0)}만원 아끼면, 1년에 ${formatAmount(monthlyCut * 12)}원이 남아요`,
         ],
         advice: `수익률 1% 올리기는 운에 맡겨야 하지만, 지출 ${(monthlyCut / 10000).toFixed(0)}만원 줄이기는 오늘부터 당신이 통제할 수 있는 영역입니다. 통제권을 되찾으세요.`,
         actionTip: "고정 지출 중 안 쓰는 OTT 구독, 과다한 보장성 보험부터 다이어트 해보세요.",
@@ -310,18 +310,16 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       const additionalSavings = Math.max(10000000, Math.ceil(savingsBudget / 10000000) * 10000000);
       items.push({
         id: "add-savings",
-        title: `든든한 비상금, 탈출을 위한 안전 점프대: ${formatKorean(additionalSavings)} 확보`,
+        title: `예적금을 ${formatKorean(additionalSavings)} 더 모으면?`,
         description: `은퇴 시점까지 ${formatKorean(additionalSavings)}을 더 모으면 부족 자금을 직접 보전할 수 있습니다.`,
         impact: `월 ${formatAmount(Math.round(additionalSavings / Math.max(1, delayYears) / 12))}원씩 추가 적립 시 달성`,
         impactType: "positive",
         details: [
-          `필요 추가 저축: ${formatKorean(additionalSavings)}`,
+          `은퇴 전까지 ${formatKorean(additionalSavings)}을 더 모아야 해요`,
         ],
         advice: `갑작스러운 비정기 지출은 로드맵을 흔드는 가장 큰 적입니다. ${formatKorean(additionalSavings)}이라는 숫자가 커 보이지만, 보너스나 부업 수입을 차곡차곡 모으다 보면 어느덧 탈출을 위한 튼튼한 점프대가 완성될 거예요.`,
         actionTip: `월 ${formatAmount(Math.round(additionalSavings / Math.max(1, delayYears) / 12))}원이 부담된다면, 우선 부업이나 중고 거래 등 '작은 수입'부터 예적금 계좌로 자동 이체되도록 설정해 보세요.`,
-        changes: [
-          { field: 'savingsAmount', value: 0, delta: additionalSavings, label: `예적금 +${formatKorean(additionalSavings)}` },
-        ],
+        // changes 없음: 예적금 추가는 "채우기" 버튼에서만 반영 (중복 적용 방지)
       });
 
       // 4. 수익률 상향
@@ -329,12 +327,12 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       const rateBoostPct = Math.round(rateBoost * 100);
       items.push({
         id: "rate-boost",
-        title: `복리의 마법에 가속도를 붙이세요: 수익률 ${rateBoostPct}%p 상향`,
+        title: `투자 수익률을 ${rateBoostPct}%p 올리면?`,
         description: `수익률 ${rateBoostPct}% 차이가 노후 20년을 바꿉니다. 복리 효과로 자산 수명이 크게 연장됩니다.`,
         impact: `복리 효과로 자산 수명이 연장됩니다`,
         impactType: "positive",
         details: [
-          "연 1~2회 리밸런싱으로 충분히 도달 가능",
+          "1년에 1~2번 자산 비중만 조정하면 돼요",
         ],
         advice: `수익률 ${rateBoostPct}% 차이가 노후 20년을 바꿉니다. 공격적인 투자보다는 배당 재투자와 정기적인 리밸런싱만으로도 충분히 도달 가능한 목표입니다. 시간이 당신의 편이 되게 만드세요.`,
         actionTip: "연 1~2회, 자산 비중이 깨졌을 때만 기계적으로 매수/매도하는 '리밸런싱 알람'을 설정하세요.",
@@ -349,13 +347,13 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       const pensionDelay = Math.min(5, 70 - 65);
       items.push({
         id: "pension-delay",
-        title: `기다림의 미학, 국가가 보증하는 최고의 수익률: ${pensionDelay}년 연기`,
+        title: `국민연금을 ${pensionDelay}년 늦게 받으면?`,
         description: `${pensionDelay}년을 참으면 수령액이 ${(pensionDelay * 7.2).toFixed(1)}%나 늘어납니다. 종신 지급이라 오래 살수록 유리합니다.`,
         impact: `월 수령액 ${(pensionDelay * 7.2).toFixed(1)}% 증가 (종신 지급)`,
         impactType: "positive",
         details: [
-          `${pensionDelay}년 연기 = ${(pensionDelay * 7.2).toFixed(1)}% 증액`,
-          "기대수명이 길수록 유리 (손익분기: 77~80세)",
+          `${pensionDelay}년만 늦게 받으면 매달 연금이 ${(pensionDelay * 7.2).toFixed(1)}% 더 나와요`,
+          "오래 살수록 이득, 77세부터 본전 이상",
         ],
         advice: `지금 당장 받는 것보다 ${pensionDelay}년을 참으면 수령액이 ${(pensionDelay * 7.2).toFixed(1)}%나 늘어납니다. 건강 관리에 자신 있다면, 이보다 확실하고 안전한 고수익 투자는 세상에 없습니다.`,
         actionTip: "연금 수령 전 기간 동안의 생활비를 ISA나 개인연금에서 꺼내 쓰는 '브릿지 전략'을 활용해 보세요.",
@@ -673,10 +671,20 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                   filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.2))",
                 }}
               />
-              <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", lineHeight: 1.4 }}>
+              <div style={{ fontSize: isMobileDevice ? 21 : 17, fontWeight: 700, color: "#fff", lineHeight: isMobileDevice ? 1.5 : 1.4 }}>
                 {isFireSuccess
-                  ? "든든한 계획이 완성되었어요."
-                  : `${assetDepletionAge}세부터 지출이 수입을 추월하기 시작해요.`}
+                  ? (() => {
+                      const parts: string[] = [];
+                      if (originalInputs && planInputs) {
+                        if (planInputs.retirementStartAge !== originalInputs.retirementStartAge) parts.push("은퇴시기");
+                        if (planInputs.monthlyLivingCostBefore75 !== originalInputs.monthlyLivingCostBefore75) parts.push("생활비");
+                        if (planInputs.nationalPensionStartAge !== originalInputs.nationalPensionStartAge) parts.push("연금수령시기");
+                      }
+                      return parts.length > 0
+                        ? <>{parts.join(', ')}를<br />조절해서 탈출전략이 만들어졌어요.</>
+                        : "든든한 계획이 완성되었어요.";
+                    })()
+                  : isMobileDevice ? <>{assetDepletionAge}세부터<br />지출이 수입을 추월하기 시작해요.</> : `${assetDepletionAge}세부터 지출이 수입을 추월하기 시작해요.`}
               </div>
             </div>
             {/* 설명 텍스트 */}
@@ -713,7 +721,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               borderRight: isMobileDevice ? "none" : "1px solid var(--border-secondary)",
               borderBottom: isMobileDevice ? "1px solid var(--border-secondary)" : "none",
             }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginBottom: 4 }}>{isFireSuccess ? `${planInputs?.simulationEndAge ?? 90}세까지 남는 금액` : `월 ${formatAmount(planInputs?.monthlyLivingCostBefore75 ?? 0)}원 기준, ${planInputs?.simulationEndAge ?? 90}세까지 부족한 금액`}</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginBottom: 4 }}>{isFireSuccess ? `${planInputs?.simulationEndAge ?? 90}세까지 남는 금액` : <>{`월 ${formatAmount(planInputs?.monthlyLivingCostBefore75 ?? 0)}원 기준,`}<br />{`${planInputs?.simulationEndAge ?? 90}세까지 부족한 모든 금액`}</>}</div>
               <div className="toss-number" style={{ fontSize: 17, fontWeight: 800, color: isFireSuccess ? "var(--color-success)" : "var(--color-error)" }}>
                 {formatKorean(Math.abs(analysis.totalSurplus))}
               </div>
@@ -734,8 +742,8 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       {/* 성공 시: 요약 섹션 */}
       {isFireSuccess && analysis && planInputs && (
         <div style={{ margin: "0 16px 16px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ fontSize: 15 }}>&#128203;</span> 내 은퇴 플랜 요약
+          <div style={{ fontSize: isMobileDevice ? 19 : 14, fontWeight: 800, color: "var(--text-primary)", marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: isMobileDevice ? 19 : 15 }}>&#128203;</span> 내 은퇴 플랜 요약
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {(() => {
@@ -762,12 +770,12 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               };
               // 은퇴 시작 값에 앞당기기 가능 정보 포함
               const retireValue = analysis.earlyRetireYears > 0
-                ? `${planInputs.retirementStartAge}세 (${analysis.earliestRetireAge}세까지 가능)`
+                ? `${planInputs.retirementStartAge}세 (${analysis.earliestRetireAge}세로 줄일 수 있어요)`
                 : `${planInputs.retirementStartAge}세 (${planInputs.startYear}년)`;
               // 월 생활비 값에 증가 가능 정보 포함
               const maxMonthly = (planInputs.monthlyLivingCostBefore75 ?? 0) + analysis.maxAdditionalMonthly;
               const costValue = analysis.maxAdditionalMonthly >= 100000
-                ? `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 (${formatAmount(maxMonthly)}원까지 가능)`
+                ? `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 (${formatAmount(maxMonthly)}원까지 늘려도 돼요)`
                 : `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 / 75세 이후 ${formatAmount(planInputs.monthlyLivingCostAfter75)}원`;
               return [
                 { label: "은퇴 시작", value: retireValue, prev: changed(orig?.retirementStartAge, planInputs.retirementStartAge) ? `${orig!.retirementStartAge}세` : null },
@@ -777,29 +785,49 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 { label: "시뮬 기간", value: `${analysis.simulationYears}년 (${planInputs.retirementStartAge}~${planInputs.simulationEndAge}세)`, prev: null },
                 ...(planInputs.totalDebt > 0 && analysis.firstRow.debtBalance > 0 ? [{ label: "부채", value: `${formatAmount(analysis.firstRow.debtBalance)}원 (은퇴 시점 잔액)`, prev: null }] : planInputs.totalDebt > 0 ? [{ label: "부채", value: "은퇴 전 상환 완료", prev: null }] : []),
               ].map((item, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1.5 }}>
-                  <span style={{ color: "#00b1bb", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
-                  <span style={{ color: "var(--text-tertiary)", minWidth: 65, flexShrink: 0 }}>
-                    {tooltips[item.label] ? (
-                      <PlanTooltip text={tooltips[item.label]}>{item.label} <Info size={11} style={{ opacity: 0.5, verticalAlign: "middle" }} /></PlanTooltip>
-                    ) : item.label}
-                  </span>
-                  {item.prev ? (
-                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ color: "var(--text-tertiary)", fontSize: 12 }}>{item.prev}</span>
-                      <span style={{ color: "#00b1bb", fontSize: 12 }}>→</span>
-                      <span style={{ color: "#00b1bb", fontWeight: 700 }}>{item.value}</span>
+                isMobileDevice ? (
+                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2, padding: "6px 0", borderBottom: "1px solid var(--border-secondary)" }}>
+                    <span style={{ fontSize: 13, color: "var(--text-tertiary)", display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ color: "#00b1bb", fontWeight: 700 }}>&#10003;</span>
+                      {tooltips[item.label] ? (
+                        <PlanTooltip text={tooltips[item.label]}>{item.label} <Info size={14} style={{ opacity: 0.5, verticalAlign: "middle" }} /></PlanTooltip>
+                      ) : item.label}
                     </span>
-                  ) : (
-                    <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{item.value}</span>
-                  )}
-                </div>
+                    {item.prev ? (
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#00b1bb", paddingLeft: 18, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const, wordBreak: "keep-all" as const }}>
+                        <span style={{ color: "var(--text-tertiary)", fontSize: 13, fontWeight: 400, whiteSpace: "nowrap" as const }}>{item.prev}</span>
+                        <span style={{ fontSize: 13 }}>→</span>
+                        <span style={{ wordBreak: "keep-all" as const }}>{item.value}</span>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)", paddingLeft: 18, wordBreak: "keep-all" as const }}>{item.value}</div>
+                    )}
+                  </div>
+                ) : (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, lineHeight: 1.5 }}>
+                    <span style={{ color: "#00b1bb", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>&#10003;</span>
+                    <span style={{ color: "var(--text-tertiary)", minWidth: 65, flexShrink: 0 }}>
+                      {tooltips[item.label] ? (
+                        <PlanTooltip text={tooltips[item.label]}>{item.label} <Info size={11} style={{ opacity: 0.5, verticalAlign: "middle" }} /></PlanTooltip>
+                      ) : item.label}
+                    </span>
+                    {item.prev ? (
+                      <span style={{ display: "flex", alignItems: "center", gap: 6, wordBreak: "keep-all" as const }}>
+                        <span style={{ color: "var(--text-tertiary)", fontSize: 12, whiteSpace: "nowrap" as const }}>{item.prev}</span>
+                        <span style={{ color: "#00b1bb", fontSize: 12 }}>→</span>
+                        <span style={{ color: "#00b1bb", fontWeight: 700, wordBreak: "keep-all" as const }}>{item.value}</span>
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--text-primary)", fontWeight: 500, wordBreak: "keep-all" as const }}>{item.value}</span>
+                    )}
+                  </div>
+                )
               ));
             })()}
           </div>
           <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border-secondary)" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 13 }}>&#128161;</span> 핵심 포인트
+            <div style={{ fontSize: isMobileDevice ? 15 : 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: isMobileDevice ? 15 : 13 }}>&#128161;</span> 핵심 포인트
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {[
@@ -808,7 +836,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                   ? `국민연금 수령 전(${planInputs.retirementStartAge}~${planInputs.nationalPensionStartAge - 1}세) ${planInputs.nationalPensionStartAge - planInputs.retirementStartAge}년이 관건`
                   : `국민연금이 은퇴 초기부터 현금흐름을 뒷받침합니다`,
               ].map((text, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: isMobileDevice ? 14 : 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>
                   <span style={{ color: "var(--text-tertiary)", flexShrink: 0 }}>&#8226;</span>
                   <span>{text}</span>
                 </div>
@@ -822,10 +850,12 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
 
       {/* 전략 안내 + 반영 버튼 (채우기 전에만 표시) */}
       {!isFireSuccess && Object.keys(filledAccounts).length === 0 && (
-        <div style={{ padding: "0 16px", marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <span style={{ flex: 1 }} />
+        <div style={{ padding: "0 16px", marginBottom: 12, display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", margin: 0, textAlign: "center", lineHeight: 1.6, wordBreak: "keep-all" as const }}>
+            어떻게 계획을 수정해야 탈출을 할 수 있을까요?
+          </p>
           <button
-            className="apply-strategy-btn"
+            className={`apply-strategy-btn${isMobileDevice ? ' btn-escape-pulse' : ''}`}
             onClick={() => {
               const allChanges: StrategyChange[] = [];
               for (const s of scenarios) {
@@ -837,21 +867,21 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               setFilledAccounts({});
               onApplyStrategies?.(allChanges, true);
             }}
-            style={{ padding: "10px 18px", fontSize: 14, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", gap: 5 }}
+            style={{ padding: "10px 24px", fontSize: 14, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", gap: 5 }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 제이의 전략으로 즉시 탈출하기
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 탈출을 성공하려면?
           </button>
         </div>
       )}
 
       {/* 계좌별 목표 잔액 (실패 시 표시) */}
       {!isFireSuccess && analysis && analysis.accountTargets && (
-        <div style={{ margin: "0 16px 12px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            <Target size={16} /> {planInputs?.retirementStartAge ?? 55}세 은퇴 시점, 계좌별 권장 잔액
+        <div style={{ margin: "32px 16px 12px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)", borderTop: "3px solid var(--border-primary)" }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
+            은퇴 전까지 채워야 할 금액
           </div>
           <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", margin: "0 0 12px" }}>
-            {planInputs?.simulationEndAge ?? 90}세까지 자산이 유지되기 위한 최소 금액입니다.
+            {planInputs?.retirementStartAge ?? 55}세까지 각 계좌에 이만큼 있으면, {planInputs?.simulationEndAge ?? 90}세까지 버틸 수 있어요.
           </p>
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
             {Object.entries(analysis.accountTargets).filter(([, a]) => (a.target > 0 || a.current > 0) && (!isFireSuccess ? a.current < a.target : true)).map(([key, account]) => {
@@ -866,8 +896,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               return (
                 <div key={key} style={{ padding: "10px 12px", borderRadius: 8, background: isFilled ? "rgba(0,177,187,0.06)" : "var(--bg-secondary)", border: isFilled ? "1px solid rgba(0,177,187,0.3)" : "1px solid transparent" }}>
                   {(() => {
-                    const barColors: Record<string, string> = { pension: "#ef4444", isa: "#3b82f6", overseas: "#8b5cf6", savings: "#f59e0b" };
-                    const barColor = barColors[key] || "#9ca3af";
+                    const barColor = "#00b1bb";
                     const basePercent = account.target > 0 ? Math.min(100, Math.round((account.current + filledAmount) / account.target * 100)) : 0;
                     const fillPercent = Math.min(100, percent);
                     return (
@@ -899,7 +928,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                                       setFilledAccounts(prev => { const next = { ...prev }; delete next[key]; return next; });
                                     }
                                   }}
-                                  style={{ padding: "2px 8px", fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)", background: "none", border: "1px solid var(--border-primary)", borderRadius: 4, cursor: "pointer" }}
+                                  style={{ padding: "2px 8px", fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)", background: "none", border: "1px solid var(--border-primary)", borderRadius: 12, cursor: "pointer" }}
                                 >
                                   취소
                                 </button>
@@ -935,9 +964,9 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                                     }, 300);
                                   }
                                 }}
-                                style={{ padding: 0, fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", background: "none", border: "none", cursor: "pointer" }}
+                                style={{ padding: "4px 12px", fontSize: 12, fontWeight: 600, color: "#00b1bb", background: "none", border: "1.5px solid #00b1bb", borderRadius: 14, cursor: "pointer" }}
                               >
-                                채우기 →
+                                채우기
                               </button>
                             )}
                           </div>
@@ -987,6 +1016,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 setFilledAccounts({});
                 setSolutionPhase(3);
               }}
+              className={isMobileDevice ? '' : 'recalc-btn-animate'}
               style={{
                 width: "100%", marginTop: 12, padding: "12px 0",
                 fontSize: 14, fontWeight: 700, color: "#fff",
@@ -1001,6 +1031,12 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       )}
 
       {/* 시나리오 카드 목록 */}
+      {isMobileDevice && (
+        <div style={{ padding: "0 16px", marginBottom: 8, marginTop: 24 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 4px 0" }}>제이의 추천 전략</h3>
+          <p style={{ fontSize: 13, color: "var(--text-tertiary)", margin: 0, lineHeight: 1.5 }}>현재 상황에서 탈출 확률을 높이는 방법이에요.</p>
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 16px" }}>
         {scenarios.map((scenario, idx) => {
           const isChecked = checkedStrategies.has(scenario.id);
@@ -1025,11 +1061,11 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 cursor: "pointer",
                 display: "flex",
                 flexDirection: "column" as const,
-                gap: 8,
+                gap: isMobileDevice ? 8 : 2,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{
+                {!isMobileDevice && <div style={{
                     width: 28, height: 28, borderRadius: 8, flexShrink: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "var(--color-profit-bg)",
@@ -1037,13 +1073,13 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                     color: "var(--color-profit)",
                   }}>
                     {idx + 1}
-                  </div>
-                <div style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>
+                  </div>}
+                <div style={{ flex: 1, minWidth: 0, fontSize: isMobileDevice ? 19 : 14, fontWeight: 600, color: "var(--text-primary)", letterSpacing: isMobileDevice ? "-0.5px" : undefined }}>
                   {scenario.title}
                 </div>
                 <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: expandedScenario === scenario.id ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginTop: 6, lineHeight: 1.6, wordBreak: "keep-all" as const, paddingLeft: 38 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginTop: 2, lineHeight: 1.6, wordBreak: "keep-all" as const, paddingLeft: isMobileDevice ? 0 : 38 }}>
                 {scenario.description}
               </div>
             </div>
@@ -1055,7 +1091,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 {scenario.actionTip && (
                   <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, border: "1px dashed var(--border-primary)", lineHeight: 1.7 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-profit)", marginBottom: 4 }}>실행 팁</div>
-                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, wordBreak: "keep-all" as const }}>{scenario.actionTip}</p>
+                    <div style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, wordBreak: "keep-all" as const }}>{scenario.actionTip!.split(/\n|(?=\d+\.\s)/).filter(Boolean).map((line, i) => <p key={i} style={{ margin: '0 0 4px' }}>{line.trim()}</p>)}</div>
                   </div>
                 )}
                 {/* 상세 정보 */}
