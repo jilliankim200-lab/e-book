@@ -139,7 +139,7 @@ export function PasswordGate2({ children }: PasswordGateProps) {
             loop
             muted
             playsInline
-            style={{ width: 180, height: "auto", clipPath: "inset(1px 2px 1px 1px)" }}
+            style={{ width: 180, height: "auto", clipPath: "inset(2px 4px 2px 2px)" }}
           />
           <div style={{
             position: "absolute",
@@ -402,17 +402,31 @@ export function PasswordGate2({ children }: PasswordGateProps) {
         @media (max-width: 768px) {
           .login-content {
             flex-direction: column;
-            gap: 24px;
-            padding: 80px 24px 24px;
+            gap: 0;
+            padding: 60px 24px 32px;
+            justify-content: flex-end;
+          }
+          .login-character-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 0 !important;
+            min-height: 0;
+            overflow: hidden;
           }
           .login-character-area img,
           .login-character-area video {
-            width: 230px !important;
+            width: auto !important;
+            max-height: 100% !important;
+            max-width: 55vw !important;
+            object-fit: contain;
           }
           .login-form {
             width: 100% !important;
             max-width: 100% !important;
-            padding: 28px 20px !important;
+            padding: 24px 20px !important;
+            flex-shrink: 0;
           }
         }
       `}</style>

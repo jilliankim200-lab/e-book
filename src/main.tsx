@@ -49,8 +49,9 @@ if (isMobileUA) {
     .mobile-device .result-metrics { grid-template-columns: 1fr !important; }
     .mobile-device .result-metrics > div { border-right: none !important; border-bottom: 1px solid var(--border-secondary) !important; text-align: left !important; }
     .mobile-device .result-metrics > div:last-child { border-bottom: none !important; }
+    .mobile-device .asset-card input.strategy-applied { background: var(--bg-secondary) !important; border-color: var(--border-primary) !important; color: var(--text-primary) !important; }
     .mobile-device .hero-character { display: none !important; }
-    .mobile-device .hero-character-mobile { display: block !important; }
+    .mobile-device .hero-character-mobile { display: none !important; }
     .mobile-device .hero-title-row { margin-bottom: 10px !important; }
     .mobile-device .sim-input-row .blue-select { flex: 1 1 0 !important; }
   `;

@@ -522,9 +522,10 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
   // 전략 반영 배지 렌더 (뱃지 없이 null 반환)
   const strategyBadge = (_field: string) => null;
 
-  // 전략 반영된 input 스타일
+  // 전략 반영된 input 스타일 (모바일에서는 비활성)
+  const isMobileUA = /Android|iPhone|iPad|iPod|Mobile|Fold|Flip/i.test(navigator.userAgent);
   const appliedInputStyle = (field: string): React.CSSProperties => {
-    if (!appliedFields[field]) return {};
+    if (isMobileUA || !appliedFields[field]) return {};
     return { background: '#00b1bb', borderColor: '#00b1bb', color: '#fff' };
   };
 

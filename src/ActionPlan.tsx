@@ -138,6 +138,10 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
     if (prevResultsRef.current !== results && solutionPhase === 1) {
       setSolutionPhase(2);
     }
+    if (prevResultsRef.current !== results) {
+      const panel = document.querySelector('.action-panel');
+      if (panel) panel.scrollTop = 0;
+    }
     prevResultsRef.current = results;
   }, [results]);
 
@@ -515,7 +519,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
     // 공통: 자산 배분 (참고용, changes 없음)
     items.push({
       id: "rebalance",
-      title: "나이에 맞는 방패와 창의 조화: 자산 배분 조정",
+      title: "자산 배분 조정",
       description: "나이에 따라 공격과 방어의 비중을 조정하면 시장 폭락에도 흔들리지 않습니다.",
       impact: "위험을 줄이면서 안정적 수입 확보",
       impactType: "neutral",
@@ -548,7 +552,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
 
       items.push({
         id: "tax-optimization",
-        title: `직장인 최후의 보너스: 절세 3총사로 ${remainingYears}년간 ${formatKorean(reinvestGrowth)} 만들기`,
+        title: `절세 3총사로 ${remainingYears}년간 ${formatKorean(reinvestGrowth)} 만들기`,
         description: `은퇴까지 남은 ${remainingYears}년, 세금만 잘 챙겨도 은퇴 자산이 크게 달라집니다. 매년 연말정산 환급금 ${formatKorean(annualRefund)}을 재투자하면 ${formatKorean(reinvestGrowth)}의 추가 자산이 생깁니다.`,
         impact: `${remainingYears}년간 절세 혜택 + 재투자 수익 약 ${formatKorean(reinvestGrowth)}`,
         impactType: "positive",
@@ -701,11 +705,8 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                   {planInputs ? `${planInputs.retirementStartAge}세에 은퇴하면 ` : ''}
                   월 생활비 <PlanTooltip text={planInputs ? `입력한 생활비 ${formatAmount(planInputs.monthlyLivingCostBefore75)}원 + 건보료 약 ${formatAmount(Math.round(analysis.avgLivingCost / 12 - planInputs.monthlyLivingCostBefore75))}원이 합산된 금액이에요.` : '입력한 생활비에 건강보험료가 합산된 금액이에요.'}><span style={{ textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: 3, cursor: 'help' }}>{formatKorean(analysis.avgLivingCost / 12)}</span></PlanTooltip>으로
                   {planInputs && planInputs.nationalPensionStartAge > (planInputs.retirementStartAge || 55)
-                    ? ` 국민연금 수령 전(${planInputs.retirementStartAge}~${planInputs.nationalPensionStartAge - 1}세) ${planInputs.nationalPensionStartAge - planInputs.retirementStartAge}년 동안 자산이 버틸 수 있는 힘이 급격히 약해집니다.`
-                    : ' 수입보다 지출이 커서 자산이 버틸 수 있는 힘이 급격히 약해집니다.'}
-                </p>
-                <p style={{ margin: 0, color: "rgba(255,255,255,0.95)", fontWeight: 600 }}>
-                  걱정 마세요. 제이가 찾은 아래 전략들을 반영하면 충분히 자산 수명을 늘릴 수 있어요.
+                    ? ` 국민연금 수령 전(${planInputs.retirementStartAge}~${planInputs.nationalPensionStartAge - 1}세) ${planInputs.nationalPensionStartAge - planInputs.retirementStartAge}년 동안 자산이 빠르게 줄어들기 시작합니다.`
+                    : ' 수입보다 지출이 커서 자산이 빠르게 줄어들기 시작합니다.'}
                 </p>
               </div>
             ) : null}
@@ -768,13 +769,14 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 "시뮬 기간": `${planInputs.retirementStartAge}세부터 ${planInputs.simulationEndAge}세까지 ${analysis.simulationYears}년간 매년 현금흐름을 계산합니다. 이 기간 동안 자산이 유지되면 성공이에요.`,
                 "부채": "은퇴 시점의 부채는 매년 원리금 상환으로 현금흐름을 압박합니다. 가능하면 은퇴 전 상환이 유리해요.",
               };
-              // 은퇴 시작 값에 앞당기기 가능 정보 포함
-              const retireValue = analysis.earlyRetireYears > 0
+              // 은퇴 시작 값에 앞당기기 가능 정보 포함 (채우기+재계산 후에만)
+              const showExtra = solutionPhase >= 3;
+              const retireValue = showExtra && analysis.earlyRetireYears > 0
                 ? `${planInputs.retirementStartAge}세 (${analysis.earliestRetireAge}세로 줄일 수 있어요)`
                 : `${planInputs.retirementStartAge}세 (${planInputs.startYear}년)`;
-              // 월 생활비 값에 증가 가능 정보 포함
+              // 월 생활비 값에 증가 가능 정보 포함 (전략 반영 후에만)
               const maxMonthly = (planInputs.monthlyLivingCostBefore75 ?? 0) + analysis.maxAdditionalMonthly;
-              const costValue = analysis.maxAdditionalMonthly >= 100000
+              const costValue = showExtra && analysis.maxAdditionalMonthly >= 100000
                 ? `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 (${formatAmount(maxMonthly)}원까지 늘려도 돼요)`
                 : `${formatAmount(planInputs.monthlyLivingCostBefore75)}원 / 75세 이후 ${formatAmount(planInputs.monthlyLivingCostAfter75)}원`;
               return [
@@ -878,7 +880,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       {!isFireSuccess && analysis && analysis.accountTargets && (
         <div style={{ margin: "32px 16px 12px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)", borderTop: "3px solid var(--border-primary)" }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
-            은퇴 전까지 채워야 할 금액
+            은퇴 전까지 최선을 다해서 채워볼까요?
           </div>
           <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", margin: "0 0 12px" }}>
             {planInputs?.retirementStartAge ?? 55}세까지 각 계좌에 이만큼 있으면, {planInputs?.simulationEndAge ?? 90}세까지 버틸 수 있어요.
@@ -907,9 +909,11 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             {isFilled ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                {!isMobileDevice && (
                                 <span style={{ fontSize: 12, fontWeight: 600, color: "#00b1bb" }}>
                                   +{formatKorean(filledAccounts[key])} 반영됨 ✓
                                 </span>
+                                )}
                                 <button
                                   onClick={() => {
                                     const amount = filledAccounts[key];
@@ -958,9 +962,14 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                                     setFilledAccounts(prev => ({ ...prev, [key]: filledAmt }));
                                     setDragAmounts(prev => { const next = { ...prev }; delete next[key]; return next; });
                                     setTimeout(() => {
-                                      const targetId = key === 'pension' ? 'section-pension' : `asset-${key}`;
-                                      const el = document.getElementById(targetId);
-                                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      if (isMobileDevice) {
+                                        const recalcBtn = document.getElementById('btn-recalculate');
+                                        if (recalcBtn) recalcBtn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                                      } else {
+                                        const targetId = key === 'pension' ? 'section-pension' : `asset-${key}`;
+                                        const el = document.getElementById(targetId);
+                                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                      }
                                     }, 300);
                                   }
                                 }}
@@ -1016,6 +1025,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 setFilledAccounts({});
                 setSolutionPhase(3);
               }}
+              id="btn-recalculate"
               className={isMobileDevice ? '' : 'recalc-btn-animate'}
               style={{
                 width: "100%", marginTop: 12, padding: "12px 0",
