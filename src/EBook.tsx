@@ -20,26 +20,26 @@ const card: React.CSSProperties = {
 };
 
 const MdTable = ({ headers, rows }: { headers: string[]; rows: string[][] }) => (
-  <div style={{ overflowX: "auto", margin: "12px 0" }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-      <thead>
-        <tr>
-          {headers.map((h, i) => (
-            <th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>
+  <>
+    <div className="md-table-pc" style={{ overflowX: "auto", margin: "12px 0" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead><tr>{headers.map((h, i) => (<th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>))}</tr></thead>
+        <tbody>{rows.map((row, ri) => (<tr key={ri}>{row.map((cell, ci) => (<td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>))}</tr>))}</tbody>
+      </table>
+    </div>
+    <div className="md-table-mobile" style={{ display: "none", flexDirection: "column", gap: 8, margin: "12px 0" }}>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{ padding: "12px 14px", borderRadius: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-secondary)" }}>
+          {row.map((cell, ci) => (
+            <div key={ci} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "4px 0", gap: 12, borderBottom: ci < row.length - 1 ? "1px solid var(--border-secondary)" : "none" }}>
+              <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 600, flexShrink: 0, minWidth: 60 }}>{headers[ci]}</span>
+              <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, textAlign: "right" as const, wordBreak: "keep-all" as const }}>{cell}</span>
+            </div>
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, ri) => (
-          <tr key={ri}>
-            {row.map((cell, ci) => (
-              <td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+        </div>
+      ))}
+    </div>
+  </>
 );
 
 const InfoBox = ({ children, color = "blue" }: { children: React.ReactNode; color?: "blue" | "amber" | "green" | "red" }) => {

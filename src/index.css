@@ -7309,37 +7309,151 @@ button[style*="font-size: 20"]:hover {
   }
 
   /* === 웰컴 페이지 === */
+  .welcome-wrapper {
+    align-items: center !important;
+    overflow: hidden !important;
+    padding: 12px !important;
+    height: 100% !important;
+  }
   .welcome-card {
     flex-direction: column !important;
-    gap: 24px !important;
-    padding: 32px 20px !important;
+    gap: 12px !important;
+    padding: 24px 20px !important;
     border-radius: 16px !important;
     text-align: center;
     margin: 0 4px !important;
+    max-height: calc(100vh - 80px) !important;
+    justify-content: center !important;
   }
   .welcome-card h1 {
-    font-size: 22px !important;
-    line-height: 1.35 !important;
+    font-size: 18px !important;
+    line-height: 1.4 !important;
     letter-spacing: -0.3px;
+    margin-bottom: 4px !important;
   }
   .welcome-card p {
-    font-size: 15px !important;
-    line-height: 1.65 !important;
-    margin-bottom: 24px !important;
+    font-size: 13px !important;
+    line-height: 1.6 !important;
+    margin-bottom: 12px !important;
   }
   .welcome-card button {
     width: 100% !important;
     justify-content: center !important;
-    height: 52px !important;
-    font-size: 16px !important;
+    height: 44px !important;
+    font-size: 14px !important;
     font-weight: 700 !important;
-    border-radius: 12px !important;
+    border-radius: 10px !important;
   }
   .welcome-character {
     flex: none !important;
   }
+  .welcome-character video,
   .welcome-character img {
-    width: 160px !important;
+    max-height: 28vh !important;
+    width: auto !important;
+  }
+
+  /* 모바일 폰트: 진하게 + 크기 키우기 */
+  .sim-group-box h3 {
+    font-size: 17px !important;
+    font-weight: 800 !important;
+    color: #111 !important;
+  }
+  .sim-group-box p {
+    font-size: 13px !important;
+    color: #444 !important;
+    font-weight: 500 !important;
+  }
+  .sim-input-row span {
+    color: #222 !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+  }
+  /* 입력 라벨 내 Tooltip span: 부모 크기 상속 */
+  .sim-input-row > span:first-child span {
+    font-size: 15px !important;
+  }
+  /* 보조 텍스트 (은퇴 시점) 등은 작게 */
+  .sim-input-row span span[style*="fontSize: 11"] {
+    font-size: 11px !important;
+  }
+  .sim-input-row span svg {
+    font-size: 12px !important;
+  }
+  .sim-input-row input {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #111 !important;
+  }
+
+  /* asset-card: 보조 텍스트 (은퇴 시점) 숨김 */
+  .asset-card .sim-input-row span span[style*="font-size: 11px"] {
+    display: none !important;
+  }
+
+  /* asset-card: 모바일 반응형 */
+  .asset-card {
+    padding: 10px 12px !important;
+  }
+  .asset-card .sim-input-row {
+    flex-wrap: wrap !important;
+  }
+  .asset-card .sim-input-row span {
+    white-space: normal !important;
+    font-size: 14px !important;
+  }
+  .asset-card .sim-input-row input {
+    flex: 1 !important;
+    min-width: 100px !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+  .asset-card .sim-input-row .btn-delete {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .asset-card .blue-select {
+    flex-shrink: 0 !important;
+  }
+
+  /* 프리셋 설명: 캐릭터 + 활용팁 숨김 */
+  .preset-desc-layout img {
+    display: none !important;
+  }
+  .preset-desc-layout > div:last-child {
+    display: none !important;
+  }
+
+  /* 테이블: 모바일에서 카드형으로 변환 */
+  .md-table-pc {
+    display: none !important;
+  }
+  .md-table-mobile {
+    display: flex !important;
+  }
+
+  /* 직접 입력 버튼: 모바일에서 타이틀 옆 표시 */
+  .btn-reset-mobile {
+    display: inline-flex !important;
+  }
+  .btn-reset {
+    display: none !important;
+  }
+
+  /* 그룹 박스: 타이틀 아래 설명문구 숨김 */
+  .sim-group-box > p {
+    display: none !important;
+  }
+
+  /* 그룹 박스: 모바일에서 보더 제거, 구분선으로 대체 */
+  .sim-group-box {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 16px 0 !important;
+    background: transparent !important;
+    border-bottom: 8px solid #f3f4f6 !important;
+    margin-bottom: 0 !important;
   }
 
   /* === 은퇴 시뮬레이션 입력 영역 === */
@@ -7388,9 +7502,9 @@ button[style*="font-size: 20"]:hover {
     font-size: 17px !important;
   }
 
-  /* 모바일 전체 폰트 보정 (토스 기준 15px 본문) */
-  .sim-input-row span span {
-    font-size: 13px !important;
+  /* 모바일 전체 폰트 보정: Tooltip 내 span은 15px 유지, 보조텍스트만 작게 */
+  .sim-input-row > span:first-child span {
+    font-size: 15px !important;
   }
 
   /* 전략 반영 버튼: 모바일에서도 동일 스타일 */

@@ -313,7 +313,7 @@ export default function App() {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
 
         {/* 데모 배너 — 헤더 위 고정 띠 */}
-        {showDemoBanner && currentPage === "retirement-calc" && !isDemoRunning && (
+        {showDemoBanner && currentPage === "retirement-calc" && !isDemoRunning && window.innerWidth > 768 && (
           <div
             id="demo-banner"
             onClick={handleStartDemo}

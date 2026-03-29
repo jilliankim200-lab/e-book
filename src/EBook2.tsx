@@ -20,26 +20,26 @@ const card: React.CSSProperties = {
 };
 
 const MdTable = ({ headers, rows }: { headers: string[]; rows: string[][] }) => (
-  <div style={{ overflowX: "auto", margin: "12px 0" }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-      <thead>
-        <tr>
-          {headers.map((h, i) => (
-            <th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>
+  <>
+    <div className="md-table-pc" style={{ overflowX: "auto", margin: "12px 0" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead><tr>{headers.map((h, i) => (<th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>))}</tr></thead>
+        <tbody>{rows.map((row, ri) => (<tr key={ri}>{row.map((cell, ci) => (<td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>))}</tr>))}</tbody>
+      </table>
+    </div>
+    <div className="md-table-mobile" style={{ display: "none", flexDirection: "column", gap: 8, margin: "12px 0" }}>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{ padding: "12px 14px", borderRadius: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-secondary)" }}>
+          {row.map((cell, ci) => (
+            <div key={ci} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "4px 0", gap: 12, borderBottom: ci < row.length - 1 ? "1px solid var(--border-secondary)" : "none" }}>
+              <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 600, flexShrink: 0, minWidth: 60 }}>{headers[ci]}</span>
+              <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, textAlign: "right" as const, wordBreak: "keep-all" as const }}>{cell}</span>
+            </div>
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, ri) => (
-          <tr key={ri}>
-            {row.map((cell, ci) => (
-              <td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+        </div>
+      ))}
+    </div>
+  </>
 );
 
 const InfoBox = ({ children }: { children: React.ReactNode }) => (
@@ -199,7 +199,7 @@ const chapters: Section[] = [
             <Heading>탈출지도에서 주의할 점</Heading>
             <Paragraph>
               탈출지도의 '연금 잔액'에는 <strong>연금저축 + IRP + 퇴직연금을 합산</strong>해서 입력하세요.
-              개별 계좌가 아닌 '연금 계좌 전체'로 시뮬레이션합니다.
+              개별 계좌가 아닌 '연금 계좌 전체'로 계산합니다.
             </Paragraph>
           </>
         ),
@@ -249,7 +249,7 @@ const chapters: Section[] = [
             <Heading>탈출지도 활용법</Heading>
             <Paragraph>
               탈출지도에 퇴직연금 적립금을 입력하면, 매년 얼마씩 인출할지 자동 계산됩니다.
-              '연금소진 모드'를 ON으로 설정하면 시뮬레이션 종료 시점까지 균등 소진됩니다.
+              '매년 고르게 나눠 쓰기'를 ON으로 설정하면 계산 종료 시점까지 균등 소진됩니다.
             </Paragraph>
           </>
         ),
@@ -325,15 +325,15 @@ const chapters: Section[] = [
         title: "5.2 탈출지도 결과 해석법",
         content: (
           <>
-            <Heading>Action Plan 패널 읽는 법</Heading>
+            <Heading>결과 요약 패널 읽는 법</Heading>
             <Paragraph>
-              시뮬레이션을 실행하면 우측에 Action Plan이 나타납니다. 상단 색상이 핵심입니다.
+              '계산하기' 버튼을 누르면 결과 요약 패널이 나타납니다. 상단 색상이 핵심입니다.
             </Paragraph>
             <MdTable
               headers={["색상", "의미", "대응"]}
               rows={[
-                ["초록", "시뮬레이션 기간 내 자산 유지", "현재 계획 유지, 여유분은 증여/여가 활용"],
-                ["빨강", "특정 나이에 적자 전환", "하단 시나리오 카드에서 개선 전략 확인"],
+                ["초록", "계산 기간 내 자산 유지", "현재 계획 유지, 여유분은 증여/여가 활용"],
+                ["빨강", "특정 나이에 적자 전환", "'전략 반영하기' 버튼으로 개선 전략 확인"],
               ]}
             />
             <Heading>연도별 테이블 핵심 포인트</Heading>
@@ -502,7 +502,7 @@ const chapters: Section[] = [
         content: (
           <>
             <Paragraph>
-              시뮬레이션 결과 90세에도 자산이 많이 남는다면, 두 가지 선택지를 고민해야 합니다.
+              탈출지도 결과 90세에도 자산이 많이 남는다면, 두 가지 선택지를 고민해야 합니다.
             </Paragraph>
             <Heading>선택지 비교</Heading>
             <MdTable
@@ -582,7 +582,7 @@ const chapters: Section[] = [
             <Heading>탈출지도가 반영하는 것</Heading>
             <Paragraph>
               탈출지도는 해외주식 배당에 15.4% 원천징수를 자동 적용하고, 금융소득 규모에 따른 건보료 변동도 반영합니다.
-              배당률이 높은 해외주식 비중을 조절하면서 시뮬레이션해보세요.
+              배당률이 높은 해외주식 비중을 조절하면서 계산해보세요.
             </Paragraph>
           </>
         ),

@@ -114,150 +114,66 @@ export function useAutoDemo(onComplete?: () => void) {
         action: () => { (qs(".calc-btn") || btnByText("계산하기"))?.click(); },
       },
 
-      // ── 결과: 실패 (우측 메시지) ──
+      // ── 결과: 실패 (우측 패널) ──
       {
         delay: 1700, message: "분석 결과가 나왔어요", messagePosition: "right",
         action: () => panelScroll(0), spotlight: () => rect(qs(".action-panel")),
       },
       {
-        delay: 2000,
+        delay: 2300,
         message: "현재 조건에서는 자산이 부족해요\n\n55세 은퇴 후 국민연금(65세)까지\n10년 공백이 가장 위험한 구간이에요",
         messagePosition: "right",
         spotlight: () => rect(qs(".action-panel")),
       },
 
-      // ── 제이 전략 적용 ──
+      // ── 계좌별 권장 잔액 확인 ──
       {
-        delay: 2300, message: "탈출 조력자 제이가 추천하는\n전략을 적용해볼게요!", messagePosition: "right",
-        action: () => { const b = qs(".apply-strategy-btn"); if (b) b.scrollIntoView({ behavior: "smooth", block: "center" }); },
-        spotlight: () => rect(qs(".apply-strategy-btn"), 4),
+        delay: 2000, message: "계좌별로 얼마가 부족한지 확인해봐요", messagePosition: "right",
+        action: () => panelScroll(400),
+        spotlight: () => rect(qs(".action-panel")),
       },
-      { delay: 1300, action: () => { qs(".apply-strategy-btn")?.click(); } },
-
-      // ── 변경된 인풋 확인 ──
-      {
-        delay: 1700, message: "제이가 조정한 항목을 확인해볼게요", messagePosition: "center",
-        action: () => { qs(".auto-hide-scrollbar")?.scrollTo({ top: 0, behavior: "smooth" }); },
-      },
-
-      // 은퇴 나이
-      {
-        delay: 1300,
-        message: "은퇴 나이가 변경되었어요\n늦출수록 국민연금 공백이 줄어들어요",
-        messagePosition: "bottom",
-        action: () => {
-          const row = findInputRow("희망 은퇴 나이");
-          if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
-        },
-        spotlight: () => rect(findInputRow("희망 은퇴 나이"), 6),
-      },
-
-      // 75세 이전 생활비
-      {
-        delay: 2000,
-        message: "75세 이전 월 생활비가 조정되었어요",
-        messagePosition: "bottom",
-        action: () => {
-          const row = findInputRow("75세 이전 월 생활비");
-          if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
-        },
-        spotlight: () => rect(findInputRow("75세 이전 월 생활비"), 4),
-      },
-
-      // 75세 이후 생활비
-      {
-        delay: 1700,
-        message: "75세 이후 생활비도 함께 조정되었어요",
-        messagePosition: "bottom",
-        action: () => {
-          const row = findInputRow("75세 이후 월 생활비");
-          if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
-        },
-        spotlight: () => rect(findInputRow("75세 이후 월 생활비"), 4),
-      },
-
-      // 국민연금 개시 나이
-      {
-        delay: 1700,
-        message: "국민연금 수령 시작 나이가 변경되었어요",
-        messagePosition: "bottom",
-        action: () => {
-          const row = findInputRow("수령 개시 나이") || findInputRow("개시 나이");
-          if (row) row.scrollIntoView({ behavior: "smooth", block: "center" });
-          else { const inputs = findAppliedInputs(); if (inputs.length > 2) inputs[2].scrollIntoView({ behavior: "smooth", block: "center" }); }
-        },
-        spotlight: () => {
-          const row = findInputRow("수령 개시 나이") || findInputRow("개시 나이");
-          if (row) return rect(row, 4);
-          const inputs = findAppliedInputs();
-          return inputs.length > 2 ? rect(inputs[2], 4) : null;
-        },
-      },
-
-      // 수익률
-      {
-        delay: 1700,
-        message: "수익률도 조정되었어요",
-        messagePosition: "bottom",
-        action: () => {
-          const inputs = findAppliedInputs();
-          const target = inputs.find(inp => inp.closest(".sim-input-row")?.textContent?.includes("수익률"));
-          if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
-        },
-        spotlight: () => {
-          const inputs = findAppliedInputs();
-          const target = inputs.find(inp => inp.closest(".sim-input-row")?.textContent?.includes("수익률"));
-          return target ? rect(target.closest(".sim-input-row") || target, 4) : null;
-        },
-      },
-
-      // ── 결과 확인 (우측 메시지) ──
-      {
-        delay: 2000, message: "전략 적용 후 결과를 확인해볼게요", messagePosition: "right",
-        action: () => panelScroll(0), spotlight: () => rect(qs(".action-panel")),
-      },
-      { delay: 2000, message: "성공! 90세까지 자금이 유지돼요", messagePosition: "right", spotlight: () => rect(qs(".action-panel")) },
-
-      // ── 은퇴 앞당기기 ──
-      {
-        delay: 2300, message: "여유가 있으니\n은퇴를 앞당겨볼까요?", messagePosition: "right",
-        action: () => panelScroll(500), spotlight: () => rect(qs(".action-panel")),
-      },
-      {
-        delay: 1700, message: "은퇴 앞당기기 버튼을 눌러봐요", messagePosition: "right",
-        action: () => { const b = btnByText("은퇴를"); if (b) b.scrollIntoView({ behavior: "smooth", block: "center" }); },
-        spotlight: () => rect(btnByText("은퇴를"), 4),
-      },
-      { delay: 1300, action: () => { btnByText("은퇴를")?.click(); } },
 
       // ── 채우기 ──
       {
-        delay: 1300, message: "부족한 계좌에 금액을 채워볼게요", messagePosition: "right",
-        action: () => panelScroll(600), spotlight: () => rect(qs(".action-panel")),
-      },
-      {
-        delay: 1700, message: "채우기 버튼으로 부족분을 채워요", messagePosition: "right",
-        action: () => { const b = btnByText("채우기"); if (b) { b.scrollIntoView({ behavior: "smooth", block: "center" }); setTimeout(() => b.click(), 300); } },
+        delay: 2000, message: "채우기 버튼으로 부족분을 채워볼게요", messagePosition: "right",
+        action: () => { const b = btnByText("채우기"); if (b) b.scrollIntoView({ behavior: "smooth", block: "center" }); },
         spotlight: () => rect(btnByText("채우기"), 4),
       },
-      { delay: 1300, action: () => { const b = btnByText("채우기"); if (b) setTimeout(() => b.click(), 200); } },
-      { delay: 1000, action: () => { const b = btnByText("채우기"); if (b) setTimeout(() => b.click(), 200); } },
+      { delay: 1000, action: () => { const b = btnByText("채우기"); if (b) { b.click(); } } },
+      { delay: 800, action: () => { const b = btnByText("채우기"); if (b) { b.click(); } } },
+      { delay: 800, action: () => { const b = btnByText("채우기"); if (b) { b.click(); } } },
+      { delay: 800, action: () => { const b = btnByText("채우기"); if (b) { b.click(); } } },
 
-      // ── 재계산 ──
+      // ── 채운 금액으로 다시 계산 (전략도 함께 반영) ──
       {
-        delay: 1300, message: "채운 금액으로 다시 계산!", messagePosition: "right",
+        delay: 1500, message: "채운 금액 + 제이의 전략을\n함께 반영해서 다시 계산해요!", messagePosition: "right",
         action: () => { const b = btnByText("채운 금액으로"); if (b) b.scrollIntoView({ behavior: "smooth", block: "center" }); },
         spotlight: () => rect(btnByText("채운 금액으로"), 4),
       },
       { delay: 1300, action: () => { btnByText("채운 금액으로")?.click(); } },
 
-      // ── 최종 ──
-      { delay: 1700, message: "최종 결과를 확인해볼게요!", messagePosition: "right", action: () => panelScroll(0), spotlight: () => rect(qs(".action-panel")) },
-      { delay: 2000, message: "숫자를 조금만 조정해도\n결과가 크게 달라진답니다!", messagePosition: "right", spotlight: () => rect(qs(".action-panel")) },
+      // ── 성공 결과 확인 ──
+      {
+        delay: 1700, message: "성공! 탈출 계획이 완성되었어요", messagePosition: "right",
+        action: () => panelScroll(0), spotlight: () => rect(qs(".action-panel")),
+      },
+
+      // ── 플랜 요약 확인 ──
+      {
+        delay: 2300,
+        message: "제이가 조정한 은퇴 플랜을 확인해보세요\n은퇴 나이, 생활비, 국민연금이\n어떻게 바뀌었는지 한눈에 볼 수 있어요",
+        messagePosition: "right",
+        action: () => panelScroll(200),
+        spotlight: () => rect(qs(".action-panel")),
+      },
 
       // ── 마무리 ──
-      { delay: 2300, message: "데모 끝!\n직접 나의 정보를 입력해보세요", messagePosition: "center" },
-      { delay: 2000, action: () => {} },
+      {
+        delay: 2500,
+        message: "숫자를 조금만 조정해도\n결과가 크게 달라진답니다!\n\n직접 나의 정보를 입력해보세요",
+        messagePosition: "center",
+      },
+      { delay: 2500, action: () => {} },
     ];
   }, []);
 

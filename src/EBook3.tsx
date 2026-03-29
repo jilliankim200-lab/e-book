@@ -20,26 +20,26 @@ const card: React.CSSProperties = {
 };
 
 const MdTable = ({ headers, rows }: { headers: string[]; rows: string[][] }) => (
-  <div style={{ overflowX: "auto", margin: "12px 0" }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-      <thead>
-        <tr>
-          {headers.map((h, i) => (
-            <th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>
+  <>
+    <div className="md-table-pc" style={{ overflowX: "auto", margin: "12px 0" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead><tr>{headers.map((h, i) => (<th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>))}</tr></thead>
+        <tbody>{rows.map((row, ri) => (<tr key={ri}>{row.map((cell, ci) => (<td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>))}</tr>))}</tbody>
+      </table>
+    </div>
+    <div className="md-table-mobile" style={{ display: "none", flexDirection: "column", gap: 8, margin: "12px 0" }}>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{ padding: "12px 14px", borderRadius: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-secondary)" }}>
+          {row.map((cell, ci) => (
+            <div key={ci} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "4px 0", gap: 12, borderBottom: ci < row.length - 1 ? "1px solid var(--border-secondary)" : "none" }}>
+              <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 600, flexShrink: 0, minWidth: 60 }}>{headers[ci]}</span>
+              <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, textAlign: "right" as const, wordBreak: "keep-all" as const }}>{cell}</span>
+            </div>
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, ri) => (
-          <tr key={ri}>
-            {row.map((cell, ci) => (
-              <td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+        </div>
+      ))}
+    </div>
+  </>
 );
 
 const InfoBox = ({ children, color = "blue" }: { children: React.ReactNode; color?: "blue" | "amber" | "green" | "red" }) => {
@@ -147,13 +147,13 @@ const chapters: Section[] = [
       },
       {
         id: "1-2",
-        title: "1.2 첫 번째 시뮬레이션: 현실 직시",
+        title: "1.2 첫 번째 계산: 현실 직시",
         content: (
           <>
             <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 16 }}>
               <img src="/images/kim2.png" alt="충격받은 김영희 씨" style={{ width: 120, height: "auto", borderRadius: 12, flexShrink: 0 }} />
               <Paragraph>
-                김영희 씨는 현재 상태를 그대로 탈출지도에 입력했습니다. "이 정도면 괜찮지 않을까"라는 기대와 함께 실행 버튼을 눌렀습니다.
+                김영희 씨는 현재 상태를 그대로 탈출지도에 입력했습니다. "이 정도면 괜찮지 않을까"라는 기대와 함께 '계산하기' 버튼을 눌렀습니다.
               </Paragraph>
             </div>
             <Heading>입력값 상세</Heading>
@@ -175,7 +175,7 @@ const chapters: Section[] = [
             />
             <Heading>결과: 68세에 적자 전환, 79세에 자산 고갈</Heading>
             <Paragraph>
-              Action Plan 패널이 빨간색으로 표시되었습니다. 연도별 테이블을 살펴보니, 60세 퇴직 후 급격한 자산 감소가 시작되었습니다.
+              결과 요약 패널이 빨간색으로 표시되었습니다. 연도별 테이블을 살펴보니, 60세 퇴직 후 급격한 자산 감소가 시작되었습니다.
             </Paragraph>
             <MdTable
               headers={["나이", "잔여 자산", "연간 수입", "연간 지출", "남는 금액"]}
@@ -222,7 +222,7 @@ const chapters: Section[] = [
                 ["해외주식 기대수익률", "7%", "6%", "세후 실질수익률 기준으로 보수적 재설정"],
               ]}
             />
-            <Heading>변경 후 시뮬레이션 결과</Heading>
+            <Heading>변경 후 계산 결과</Heading>
             <MdTable
               headers={["나이", "잔여 자산", "연간 수입", "연간 지출", "남는 금액"]}
               rows={[
@@ -235,7 +235,7 @@ const chapters: Section[] = [
               ]}
             />
             <Paragraph>
-              Action Plan 패널이 초록색으로 전환되었습니다. 90세에도 약 3,000만원의 자산이 남아 있고, 국민연금이 종신으로 지급되므로 기본 생활은 유지됩니다.
+              결과 요약 패널이 초록색으로 전환되었습니다. 90세에도 약 3,000만원의 자산이 남아 있고, 국민연금이 종신으로 지급되므로 기본 생활은 유지됩니다.
             </Paragraph>
             <Heading>각 변수의 개별 기여도 비교</Heading>
             <Paragraph>
@@ -266,7 +266,7 @@ const chapters: Section[] = [
   },
   {
     id: "ch2",
-    title: "2장. 박준호 부부(48세)의 조기은퇴 도전",
+    title: "2장. 박준호 부부(48세)의 조기탈출 도전",
     subsections: [
       {
         id: "2-1",
@@ -274,7 +274,7 @@ const chapters: Section[] = [
         content: (
           <>
             <Paragraph>
-              박준호 씨(48세)는 IT기업 시니어 개발자로 연봉 1.1억원, 아내 최수진 씨(47세)는 공공기관 행정직으로 연봉 6,500만원입니다. 자녀 없이 부부만 생활하며, 일찍부터 FIRE(Financial Independence, Retire Early)를 목표로 자산을 적극 축적해 왔습니다.
+              박준호 씨(48세)는 IT기업 시니어 개발자로 연봉 1.1억원, 아내 최수진 씨(47세)는 공공기관 행정직으로 연봉 6,500만원입니다. 자녀 없이 부부만 생활하며, 일찍부터 FIRE(Financial Independence, Retire Early)을 목표로 자산을 적극 축적해 왔습니다.
             </Paragraph>
             <Heading>박준호 부부의 재무 현황</Heading>
             <MdTable
@@ -306,7 +306,7 @@ const chapters: Section[] = [
       },
       {
         id: "2-2",
-        title: "2.2 50세 은퇴 시뮬레이션: 조기은퇴의 함정",
+        title: "2.2 50세 은퇴 계산: 조기탈출의 함정",
         content: (
           <>
             <Paragraph>
@@ -328,7 +328,7 @@ const chapters: Section[] = [
             />
             <Heading>결과: 62세에 적자 가속, 71세에 자산 고갈</Heading>
             <Paragraph>
-              Action Plan 패널이 빨간색으로 표시되었습니다. 15억원의 자산이 21년 만에 바닥나는 결과가 나왔습니다.
+              결과 요약 패널이 빨간색으로 표시되었습니다. 15억원의 자산이 21년 만에 바닥나는 결과가 나왔습니다.
             </Paragraph>
             <MdTable
               headers={["나이", "잔여 자산", "연간 지출", "비고"]}
@@ -341,7 +341,7 @@ const chapters: Section[] = [
                 ["71세", "0", "1.18억원", "자산 완전 고갈"],
               ]}
             />
-            <Heading>조기은퇴의 세 가지 함정</Heading>
+            <Heading>조기탈출의 세 가지 함정</Heading>
             <BulletList items={[
               "함정 1 — 인출 기간 45년: 50세부터 95세까지 자산을 꺼내 쓰는 기간이 거의 반세기. 일반 은퇴(60세)보다 10년 더 길다",
               "함정 2 — 연금 공백 15년: 50~65세 사이에 연금 수입이 전혀 없음. 이 기간에만 약 6억원이 순인출됨",
@@ -351,7 +351,7 @@ const chapters: Section[] = [
               50~65세의 15년 공백기가 결정적이었습니다. 이 기간에 자산이 15억에서 2.8억으로 급감하면서, 65세부터 시작되는 연금만으로는 회복이 불가능한 상태가 됩니다.
             </Paragraph>
             <InfoBox color="red">
-              <strong>핵심 교훈:</strong> 조기은퇴를 검토할 때는 "총자산이 얼마인가"보다 "연금 수령 전까지 몇 년을 버텨야 하는가"가 더 중요한 질문입니다. 15년간 무수입 상태로 매년 7,000만원 이상을 인출하면, 15억도 빠르게 소진됩니다.
+              <strong>핵심 교훈:</strong> 조기탈출을 검토할 때는 "총자산이 얼마인가"보다 "연금 수령 전까지 몇 년을 버텨야 하는가"가 더 중요한 질문입니다. 15년간 무수입 상태로 매년 7,000만원 이상을 인출하면, 15억도 빠르게 소진됩니다.
             </InfoBox>
           </>
         ),
@@ -362,7 +362,7 @@ const chapters: Section[] = [
         content: (
           <>
             <Paragraph>
-              50세 은퇴 시뮬레이션의 결과에 충격을 받은 박준호 부부는 은퇴 시기를 53세로 3년 늦추기로 했습니다. "겨우 3년 차이인데 얼마나 달라지겠어?"라는 반신반의로 다시 탈출지도를 실행했습니다.
+              50세 은퇴 계산 결과에 충격을 받은 박준호 부부는 은퇴 시기를 53세로 3년 늦추기로 했습니다. "겨우 3년 차이인데 얼마나 달라지겠어?"라는 반신반의로 다시 탈출지도를 실행했습니다.
             </Paragraph>
             <Heading>3년 추가 근무가 만드는 다섯 가지 효과</Heading>
             <MdTable
@@ -385,7 +385,7 @@ const chapters: Section[] = [
               "해외주식 매도 시 양도차익이 250만원을 넘으면 소득으로 잡히므로 주의",
               "피부양자 유지 시 연간 약 200~350만원의 건보료를 절약할 수 있음",
             ]} />
-            <Heading>53세 은퇴 시뮬레이션 결과</Heading>
+            <Heading>53세 은퇴 계산 결과</Heading>
             <MdTable
               headers={["나이", "잔여 자산", "비고"]}
               rows={[
@@ -398,7 +398,7 @@ const chapters: Section[] = [
               ]}
             />
             <Paragraph>
-              Action Plan 패널이 초록색으로 전환되었습니다. 3년의 추가 근무만으로 자산 고갈 시점이 71세에서 95세 이후로 24년 이상 늦춰졌습니다.
+              결과 요약 패널이 초록색으로 전환되었습니다. 3년의 추가 근무만으로 자산 고갈 시점이 71세에서 95세 이후로 24년 이상 늦춰졌습니다.
             </Paragraph>
             <Heading>50세 vs 53세 은퇴 비교 요약</Heading>
             <MdTable
@@ -407,7 +407,7 @@ const chapters: Section[] = [
                 ["53세 시점 자산", "12.6억원", "20.8억원"],
                 ["자산 고갈 시점", "71세", "95세 이후"],
                 ["65세 시점 잔여 자산", "2.8억원", "11.5억원"],
-                ["Action Plan 판정", "빨강 (위험)", "초록 (안정)"],
+                ["결과 요약 판정", "빨강 (위험)", "초록 (안정)"],
               ]}
             />
             <InfoBox color="green">
@@ -450,7 +450,7 @@ const chapters: Section[] = [
                 ["남편 국민연금", "월 140만원 (현재 수령 중)"],
               ]}
             />
-            <Heading>자산이 충분한데 왜 시뮬레이션이 필요한가?</Heading>
+            <Heading>자산이 충분한데 왜 탈출지도가 필요한가?</Heading>
             <BulletList items={[
               "자산 고갈 걱정은 없지만, 불필요한 세금을 내고 있는지 확인하고 싶다",
               "금융소득종합과세에 해당되는지, 건보료가 얼마나 나오는지 궁금하다",
@@ -458,14 +458,14 @@ const chapters: Section[] = [
               "자녀에게 얼마까지 증여해도 본인 노후에 지장이 없는지 파악하고 싶다",
             ]} />
             <InfoBox color="blue">
-              고자산 은퇴자의 시뮬레이션 목적은 '자산 고갈 방지'가 아닙니다. <strong>"얼마나 더 쓸 수 있는가"</strong>와 <strong>"얼마를 자녀에게 이전할 수 있는가"</strong>를 구분하는 것, 그리고 <strong>세금과 건보료를 최소화</strong>하는 것이 핵심입니다.
+              고자산 은퇴자의 탈출지도 활용 목적은 '자산 고갈 방지'가 아닙니다. <strong>"얼마나 더 쓸 수 있는가"</strong>와 <strong>"얼마를 자녀에게 이전할 수 있는가"</strong>를 구분하는 것, 그리고 <strong>세금과 건보료를 최소화</strong>하는 것이 핵심입니다.
             </InfoBox>
           </>
         ),
       },
       {
         id: "3-2",
-        title: "3.2 세금 최적화와 생활비 여력 시뮬레이션",
+        title: "3.2 세금 최적화와 생활비 여력 계산",
         content: (
           <>
             <Paragraph>

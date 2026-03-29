@@ -20,26 +20,42 @@ const card: React.CSSProperties = {
 };
 
 const MdTable = ({ headers, rows }: { headers: string[]; rows: string[][] }) => (
-  <div style={{ overflowX: "auto", margin: "12px 0" }}>
-    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-      <thead>
-        <tr>
-          {headers.map((h, i) => (
-            <th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, ri) => (
-          <tr key={ri}>
-            {row.map((cell, ci) => (
-              <td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>
+  <>
+    {/* PC: 테이블 */}
+    <div className="md-table-pc" style={{ overflowX: "auto", margin: "12px 0" }}>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+        <thead>
+          <tr>
+            {headers.map((h, i) => (
+              <th key={i} style={{ padding: "10px 12px", fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", borderBottom: "1px solid var(--border-primary)", background: "var(--bg-secondary)", textAlign: "center", whiteSpace: "nowrap" }}>{h}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody>
+          {rows.map((row, ri) => (
+            <tr key={ri}>
+              {row.map((cell, ci) => (
+                <td key={ci} style={{ padding: "10px 12px", fontSize: 13, textAlign: "center", borderBottom: "1px solid var(--border-secondary)", color: "var(--text-secondary)", whiteSpace: "nowrap" }}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    {/* 모바일: 카드 */}
+    <div className="md-table-mobile" style={{ display: "none", flexDirection: "column", gap: 8, margin: "12px 0" }}>
+      {rows.map((row, ri) => (
+        <div key={ri} style={{ padding: "12px 14px", borderRadius: 10, background: "var(--bg-secondary)", border: "1px solid var(--border-secondary)" }}>
+          {row.map((cell, ci) => (
+            <div key={ci} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "4px 0", gap: 12, borderBottom: ci < row.length - 1 ? "1px solid var(--border-secondary)" : "none" }}>
+              <span style={{ fontSize: 11, color: "var(--text-tertiary)", fontWeight: 600, flexShrink: 0, minWidth: 60 }}>{headers[ci]}</span>
+              <span style={{ fontSize: 13, color: "var(--text-primary)", fontWeight: 500, textAlign: "right" as const, wordBreak: "keep-all" as const }}>{cell}</span>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  </>
 );
 
 const InfoBox = ({ children }: { children: React.ReactNode }) => {
@@ -109,7 +125,7 @@ const chapters: Section[] = [
             <Paragraph>
               탈출지도를 처음 열면 입력 항목이 많아 막막하게 느껴질 수 있습니다. 하지만 걱정하지 마세요. 모든 항목에는 확인 경로가 있고, 당장 모르는 값은 건너뛰어도 괜찮습니다. 이 섹션에서는 각 항목을 어디서 찾고, 모를 때 어떻게 대처하는지 단계별로 안내합니다.
             </Paragraph>
-            <Heading>기본 정보: 시뮬레이션의 시간축 설정</Heading>
+            <Heading>기본 정보: 계산의 시간축 설정</Heading>
             <MdTable
               headers={["입력 항목", "어디서 확인하나요?", "모를 때 이렇게 하세요"]}
               rows={[
@@ -124,7 +140,7 @@ const chapters: Section[] = [
             </Paragraph>
             <Heading>생활비: 가장 중요한 입력값</Heading>
             <Paragraph>
-              생활비는 시뮬레이션 결과에 가장 큰 영향을 미치는 변수입니다. 정확하게 파악하는 것이 핵심입니다.
+              생활비는 결과에 가장 큰 영향을 미치는 변수입니다. 정확하게 파악하는 것이 핵심입니다.
             </Paragraph>
             <BulletList items={[
               "카드사 앱에서 최근 6개월 결제 내역을 다운로드하여 월 평균을 구하세요",
@@ -157,7 +173,7 @@ const chapters: Section[] = [
               ]}
             />
             <InfoBox>
-              <strong>실전 조언:</strong> 모든 항목을 완벽하게 채울 필요가 없습니다. 확실한 값만 먼저 넣고 시뮬레이션을 돌린 뒤, 나머지를 하나씩 확인하여 수정하세요. 탈출지도는 몇 번이든 다시 실행할 수 있습니다. 처음에 80% 정확도로 시작하고 반복하며 100%에 가까워지는 것이 올바른 접근법입니다.
+              <strong>실전 조언:</strong> 모든 항목을 완벽하게 채울 필요가 없습니다. 확실한 값만 먼저 넣고 계산을 돌린 뒤, 나머지를 하나씩 확인하여 수정하세요. 탈출지도는 몇 번이든 다시 실행할 수 있습니다. 처음에 80% 정확도로 시작하고 반복하며 100%에 가까워지는 것이 올바른 접근법입니다.
             </InfoBox>
           </>
         ),
@@ -168,11 +184,11 @@ const chapters: Section[] = [
         content: (
           <>
             <Paragraph>
-              시뮬레이션 결과 화면에는 세 가지 핵심 영역이 있습니다. Action Plan 패널, 연도별 상세 테이블, 그리고 다운로드 기능입니다. 이 세 가지를 제대로 읽을 줄 알면 탈출지도의 가치를 100% 끌어낼 수 있습니다.
+              결과 화면에는 세 가지 핵심 영역이 있습니다. 결과 요약 패널, 연도별 상세 테이블, 그리고 다운로드 기능입니다. 이 세 가지를 제대로 읽을 줄 알면 탈출지도의 가치를 100% 끌어낼 수 있습니다.
             </Paragraph>
-            <Heading>Action Plan 패널: 신호등처럼 읽기</Heading>
+            <Heading>결과 요약 패널: 신호등처럼 읽기</Heading>
             <Paragraph>
-              실행 버튼을 누르면 가장 먼저 눈에 들어오는 것이 Action Plan 패널입니다. 색상이 모든 것을 말해줍니다.
+              '계산하기' 버튼을 누르면 가장 먼저 눈에 들어오는 것이 결과 요약 패널입니다. 색상이 모든 것을 말해줍니다.
             </Paragraph>
             <MdTable
               headers={["색상", "상태", "의미", "다음 행동"]}
@@ -200,13 +216,13 @@ const chapters: Section[] = [
             <Heading>다운로드 기능으로 비교 분석하기</Heading>
             <BulletList items={[
               "결과 화면 하단의 다운로드 버튼으로 연도별 데이터를 CSV/엑셀로 내려받을 수 있습니다",
-              "시뮬레이션을 돌릴 때마다 파일을 저장하세요. 파일명 예시: '시뮬레이션_기본_20260321.csv'",
+              "계산을 돌릴 때마다 파일을 저장하세요. 파일명 예시: '시뮬레이션_기본_20260321.csv'",
               "변수를 바꾼 결과도 저장하세요. 예시: '시뮬레이션_생활비350_20260321.csv'",
               "두 파일을 엑셀에서 나란히 열면 어떤 변수가 얼마나 큰 차이를 만드는지 한눈에 비교됩니다",
               "가족과 공유하거나 재무상담 시 가져가면 상담 효율이 크게 높아집니다",
             ]} />
             <InfoBox>
-              <strong>활용 팁:</strong> 시뮬레이션 결과를 최소 3개 버전(현재 그대로, 낙관 시나리오, 비관 시나리오)으로 저장해 두세요. 비관 시나리오에서도 자산이 유지된다면 높은 확신을 가질 수 있습니다. 낙관 시나리오만 보고 계획을 세우면 현실에서 어긋날 위험이 큽니다.
+              <strong>활용 팁:</strong> 결과를 최소 3개 버전(현재 그대로, 낙관 시나리오, 비관 시나리오)으로 저장해 두세요. 비관 시나리오에서도 자산이 유지된다면 높은 확신을 가질 수 있습니다. 낙관 시나리오만 보고 계획을 세우면 현실에서 어긋날 위험이 큽니다.
             </InfoBox>
           </>
         ),
@@ -219,15 +235,15 @@ const chapters: Section[] = [
             <Paragraph>
               탈출지도를 한 번만 돌리면 '현재 상태의 스냅샷'만 얻게 됩니다. 진짜 가치는 여러 번 반복 실행하며 변수의 영향력을 체감할 때 나타납니다. 이 섹션에서는 효과적인 반복 실행 방법을 알려드립니다.
             </Paragraph>
-            <Heading>1단계: 예시 프리셋으로 감 잡기</Heading>
+            <Heading>1단계: 연령별 탈출 시나리오로 감 잡기</Heading>
             <Paragraph>
-              탈출지도에는 미리 준비된 예시 프리셋이 있습니다. 본인 데이터를 입력하기 전에 예시를 먼저 실행해 보세요.
+              탈출지도에는 미리 준비된 연령별 탈출 시나리오가 있습니다. 본인 데이터를 입력하기 전에 시나리오를 먼저 실행해 보세요.
             </Paragraph>
             <BulletList items={[
-              "예시 프리셋의 결과를 보면서 '이런 조건이면 이런 결과가 나오는구나'라는 감을 잡으세요",
-              "예시의 생활비를 50만원 올리거나 내려서 다시 돌려보세요. 변화량을 체감할 수 있습니다",
-              "예시에서 은퇴 나이를 바꿔보세요. 3년 차이가 결과에 얼마나 영향을 주는지 확인합니다",
-              "최소 3번은 예시로 연습한 후에 본인 데이터를 입력하는 것을 권장합니다",
+              "연령별 탈출 시나리오의 결과를 보면서 '이런 조건이면 이런 결과가 나오는구나'라는 감을 잡으세요",
+              "시나리오의 생활비를 50만원 올리거나 내려서 다시 돌려보세요. 변화량을 체감할 수 있습니다",
+              "시나리오에서 은퇴 나이를 바꿔보세요. 3년 차이가 결과에 얼마나 영향을 주는지 확인합니다",
+              "최소 3번은 시나리오로 연습한 후에 본인 데이터를 입력하는 것을 권장합니다",
             ]} />
             <Heading>2단계: 변수 하나씩 바꿔 민감도 분석</Heading>
             <Paragraph>
@@ -254,7 +270,7 @@ const chapters: Section[] = [
               "본인의 국민연금 수령 시기와 배우자의 수령 시기를 2~3년 차이로 설정해 보세요",
               "한 사람이 먼저 연금을 받기 시작하고, 이후 다른 사람의 연금이 합산되는 구조가 현금흐름 안정에 유리합니다",
               "부부 중 한 명이 직장을 유지하는 동안 다른 한 명을 건보 피부양자로 등록하면 건보료를 절약할 수 있습니다",
-              "부부 모드에서는 두 사람의 자산과 연금이 합산되므로, 단독 시뮬레이션보다 정확한 결과를 얻을 수 있습니다",
+              "부부 모드에서는 두 사람의 자산과 연금이 합산되므로, 단독 계산보다 정확한 결과를 얻을 수 있습니다",
             ]} />
             <InfoBox>
               <strong>반복 실행의 핵심:</strong> 한 번에 완벽한 결과를 기대하지 마세요. 3~5회 반복하면서 변수의 영향력을 파악하고, 가장 효과적인 조합을 찾아가는 과정 자체가 은퇴 설계입니다. 매번 결과를 다운로드하여 기록으로 남기세요.
@@ -266,15 +282,15 @@ const chapters: Section[] = [
   },
   {
     id: "ch2",
-    title: "2장. 나의 시뮬레이션 워크북",
+    title: "2장. 나의 탈출지도 워크북",
     subsections: [
       {
         id: "2-1",
-        title: "2.1 시뮬레이션 전 준비 체크리스트",
+        title: "2.1 계산 전 준비 체크리스트",
         content: (
           <>
             <Paragraph>
-              탈출지도에 정확한 값을 넣으려면 사전 준비가 필수입니다. 아래 체크리스트를 하나씩 확인하며, 시뮬레이션에 필요한 정보를 모아 보세요. 전체 소요 시간은 약 40~50분입니다.
+              탈출지도에 정확한 값을 넣으려면 사전 준비가 필수입니다. 아래 체크리스트를 하나씩 확인하며, 계산에 필요한 정보를 모아 보세요. 전체 소요 시간은 약 40~50분입니다.
             </Paragraph>
             <Heading>국민연금 예상액 확인</Heading>
             <CheckList items={[
@@ -314,23 +330,23 @@ const chapters: Section[] = [
       },
       {
         id: "2-2",
-        title: "2.2 4단계 시뮬레이션 설계법",
+        title: "2.2 4단계 계산 설계법",
         content: (
           <>
             <Paragraph>
-              한 번의 시뮬레이션으로 완벽한 답을 얻을 수 없습니다. 아래 4단계를 순서대로 실행하면, 어떤 변수가 나의 은퇴에 가장 큰 영향을 미치는지 체계적으로 파악할 수 있습니다. 각 단계에서 결과를 다운로드하여 기록으로 남기세요.
+              한 번의 계산으로 완벽한 답을 얻을 수 없습니다. 아래 4단계를 순서대로 실행하면, 어떤 변수가 나의 은퇴에 가장 큰 영향을 미치는지 체계적으로 파악할 수 있습니다. 각 단계에서 결과를 다운로드하여 기록으로 남기세요.
             </Paragraph>
             <Heading>1단계: 현재 상태 그대로 (기준선 만들기)</Heading>
             <BulletList items={[
               "준비 체크리스트에서 파악한 값을 모두 입력합니다",
               "실행 후 결과를 '기준선_날짜.csv'로 다운로드하여 저장합니다",
-              "Action Plan 색상, 자산 고갈 시점, 95세 잔여 자산을 기록하세요",
+              "결과 요약 색상, 자산 고갈 시점, 95세 잔여 자산을 기록하세요",
               "이 결과가 이후 모든 비교의 출발점이 됩니다",
             ]} />
             <MdTable
               headers={["기록 항목", "나의 결과"]}
               rows={[
-                ["Action Plan 색상", "_____ (초록/빨강)"],
+                ["결과 요약 색상", "_____ (초록/빨강)"],
                 ["자산 고갈 시점", "_____세"],
                 ["95세 잔여 자산", "_____원"],
                 ["가장 큰 적자 발생 연도", "_____세, _____만원 부족"],
@@ -383,7 +399,7 @@ const chapters: Section[] = [
               ]}
             />
             <InfoBox>
-              <strong>4단계 완료 후:</strong> 이 네 단계를 마치면 총 8~10번의 시뮬레이션 결과가 모입니다. 이 데이터를 보면 "내 은퇴에 가장 큰 영향을 미치는 변수"가 무엇인지 명확해집니다. 대부분의 경우 생활비와 국민연금 수령 시기가 가장 큰 영향력을 가집니다.
+              <strong>4단계 완료 후:</strong> 이 네 단계를 마치면 총 8~10번의 결과가 모입니다. 이 데이터를 보면 "내 은퇴에 가장 큰 영향을 미치는 변수"가 무엇인지 명확해집니다. 대부분의 경우 생활비와 국민연금 수령 시기가 가장 큰 영향력을 가집니다.
             </InfoBox>
           </>
         ),
@@ -394,7 +410,7 @@ const chapters: Section[] = [
         content: (
           <>
             <Paragraph>
-              시뮬레이션은 한 번 돌리고 끝나는 것이 아닙니다. 매년 1월, 약 30분만 투자하여 지난 1년간의 변화를 탈출지도에 반영하세요. 1년간 시장 상황, 생활비 패턴, 연금 제도 등이 바뀌므로, 업데이트하지 않은 시뮬레이션은 점차 현실과 괴리가 생깁니다.
+              탈출지도는 한 번 돌리고 끝나는 것이 아닙니다. 매년 1월, 약 30분만 투자하여 지난 1년간의 변화를 반영하세요. 1년간 시장 상황, 생활비 패턴, 연금 제도 등이 바뀌므로, 업데이트하지 않은 결과는 점차 현실과 괴리가 생깁니다.
             </Paragraph>
             <Heading>매년 1월에 점검할 항목</Heading>
             <CheckList items={[
@@ -420,11 +436,11 @@ const chapters: Section[] = [
             />
             <Heading>연간 핵심 수치 기록표</Heading>
             <Paragraph>
-              매년 시뮬레이션을 돌린 후, 아래 세 가지 핵심 수치를 기록해 두세요. 5년치를 모으면 은퇴 준비의 방향이 올바른지 한눈에 파악할 수 있습니다.
+              매년 계산을 돌린 후, 아래 세 가지 핵심 수치를 기록해 두세요. 5년치를 모으면 은퇴 준비의 방향이 올바른지 한눈에 파악할 수 있습니다.
             </Paragraph>
             <CheckList items={[
               "총 금융자산 현재가: ____________원 (작년 대비 +/- ____% 변동)",
-              "시뮬레이션 기준 자산 고갈 시점: ____세 (작년 대비 +/- ____년 변동)",
+              "탈출지도 기준 자산 고갈 시점: ____세 (작년 대비 +/- ____년 변동)",
               "95세 기준 잔여 자산 예상: ____________원 (작년 대비 +/- ____% 변동)",
             ]} />
             <Paragraph>
@@ -581,7 +597,7 @@ export function SimGuide({ onNavigate }: SimGuideProps) {
               boxShadow: "0 2px 12px rgba(49, 130, 246, 0.3)",
             }}
           >
-            <Calculator size={16} /> 시뮬레이션 바로가기
+            <Calculator size={16} /> 탈출지도 바로가기
           </button>
         )}
       </div>
