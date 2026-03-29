@@ -580,7 +580,7 @@
     color: var(--foreground);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-family: Pretendard Variable, -apple-system, BlinkMacSystemFont, system-ui, Roboto, Helvetica Neue, Segoe UI, Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, sans-serif;
+    font-family: 'NanumSquare', -apple-system, BlinkMacSystemFont, system-ui, Roboto, Helvetica Neue, Segoe UI, Apple SD Gothic Neo, Noto Sans KR, Malgun Gothic, sans-serif;
   }
 
   ::-webkit-scrollbar {
@@ -6608,14 +6608,14 @@ html {
 }
 
 .number-large {
-  font-family: Pretendard Variable, Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'NanumSquare', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 32px;
   font-weight: 700;
   line-height: 40px;
 }
 
 .number {
-  font-family: Pretendard Variable, Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'NanumSquare', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-size: 18px;
   font-weight: 600;
   line-height: 26px;
