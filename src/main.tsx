@@ -36,7 +36,7 @@ if (isMobileUA) {
     .mobile-device .page-title-section { display: none !important; }
     .mobile-device .mobile-pc-notice { display: block !important; }
     .mobile-device .action-panel[style*="width: 0"] { display: none !important; }
-    .mobile-device .action-panel[style*="width: 520"] { display: block !important; position: fixed !important; left: 0 !important; right: 0 !important; top: 0 !important; width: 100vw !important; max-width: 100vw !important; height: 100vh !important; z-index: 60 !important; box-shadow: none !important; border-left: none !important; }
+    .mobile-device .action-panel[style*="width: 520"] { display: block !important; position: fixed !important; left: 0 !important; right: 0 !important; top: 0 !important; width: 100vw !important; max-width: 100vw !important; height: 100vh !important; z-index: 60 !important; box-shadow: none !important; border-left: none !important; zoom: 1 !important; overflow-x: hidden !important; }
     .mobile-device .mobile-back-btn { display: block !important; }
     .mobile-device .sim-input-row { justify-content: space-between !important; gap: 8px !important; width: 100% !important; }
     .mobile-device .sim-input-row span { text-align: left !important; flex: 1 1 0 !important; white-space: normal !important; line-height: 1.4 !important; min-width: 0 !important; font-size: 15px !important; }
@@ -45,6 +45,14 @@ if (isMobileUA) {
     .mobile-device .sim-toast { bottom: 32px !important; right: auto !important; left: 50% !important; transform: translateX(-50%) !important; }
     .mobile-device .preset-desc-layout { flex-direction: column !important; gap: 12px !important; }
     .mobile-device .preset-desc-layout > div:last-child { padding-left: 0 !important; border-left: none !important; padding-top: 12px !important; border-top: 1px solid rgba(49,130,246,0.15) !important; }
+    .mobile-device .mobile-hide-label { display: none !important; }
+    .mobile-device .result-metrics { grid-template-columns: 1fr !important; }
+    .mobile-device .result-metrics > div { border-right: none !important; border-bottom: 1px solid var(--border-secondary) !important; text-align: left !important; }
+    .mobile-device .result-metrics > div:last-child { border-bottom: none !important; }
+    .mobile-device .hero-character { display: none !important; }
+    .mobile-device .hero-character-mobile { display: block !important; }
+    .mobile-device .hero-title-row { margin-bottom: 10px !important; }
+    .mobile-device .sim-input-row .blue-select { flex: 1 1 0 !important; }
   `;
   document.head.appendChild(style);
 }

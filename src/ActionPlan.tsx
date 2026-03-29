@@ -16,17 +16,32 @@ function PlanTooltip({ text, children }: { text: string; children: React.ReactNo
     if (left < 8) left = 8;
     if (left + tipWidth > window.innerWidth - 8) left = window.innerWidth - 8 - tipWidth;
     const arrowLeft = rect.left + rect.width / 2 - left - 6;
-    setTipStyle({
-      position: 'fixed', bottom: window.innerHeight - rect.top + 8, left, width: tipWidth,
-      padding: '12px 16px', borderRadius: 10, background: '#fff', color: 'var(--text-primary)',
-      fontSize: 13, fontWeight: 500, lineHeight: 1.8, textAlign: 'left' as const, whiteSpace: 'normal',
-      boxShadow: '0 6px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', zIndex: 10000, pointerEvents: 'none' as const,
-    });
-    setArrowStyle({
-      position: 'absolute' as const, bottom: -6, left: Math.max(12, Math.min(arrowLeft, tipWidth - 20)),
-      width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
-      borderTop: '6px solid #fff',
-    });
+    const showBelow = rect.top < 120;
+    if (showBelow) {
+      setTipStyle({
+        position: 'fixed', top: rect.bottom + 8, left, width: tipWidth,
+        padding: '12px 16px', borderRadius: 10, background: '#fff', color: 'var(--text-primary)',
+        fontSize: 13, fontWeight: 500, lineHeight: 1.8, textAlign: 'left' as const, whiteSpace: 'normal',
+        boxShadow: '0 6px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', zIndex: 10000, pointerEvents: 'none' as const,
+      });
+      setArrowStyle({
+        position: 'absolute' as const, top: -6, left: Math.max(12, Math.min(arrowLeft, tipWidth - 20)),
+        width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+        borderBottom: '6px solid #fff',
+      });
+    } else {
+      setTipStyle({
+        position: 'fixed', bottom: window.innerHeight - rect.top + 8, left, width: tipWidth,
+        padding: '12px 16px', borderRadius: 10, background: '#fff', color: 'var(--text-primary)',
+        fontSize: 13, fontWeight: 500, lineHeight: 1.8, textAlign: 'left' as const, whiteSpace: 'normal',
+        boxShadow: '0 6px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)', zIndex: 10000, pointerEvents: 'none' as const,
+      });
+      setArrowStyle({
+        position: 'absolute' as const, bottom: -6, left: Math.max(12, Math.min(arrowLeft, tipWidth - 20)),
+        width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+        borderTop: '6px solid #fff',
+      });
+    }
     setShow(true);
   };
   return (
@@ -107,6 +122,8 @@ interface Scenario {
   changes?: StrategyChange[];
 }
 
+const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile|Fold|Flip/i.test(navigator.userAgent);
+
 export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyStrategies, onRecalculate, inputs: planInputs, originalInputs, onClose }: ActionPlanProps) {
   const [expandedScenario, setExpandedScenario] = useState<string | null>(null);
   const [applyMode, setApplyMode] = useState(false);
@@ -175,7 +192,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       savings: { target: targetSavings, current: firstRow.savingsBalance, label: "예적금" },
     };
 
-    // === 여유분 배분: 총 잉여의 50%만 활용 ===
+    // === 여유분 배분: 총 여유분의 50%만 활용 ===
     const safeBudget = Math.max(0, totalSurplus * 0.5);
     const currentMonthly = planInputs?.monthlyLivingCostBefore75 ?? 0;
     const currentRetireAge = planInputs?.retirementStartAge ?? firstRow.age;
@@ -392,6 +409,36 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
         }
       }
 
+      // 8. 연금저축 신규 가입 (2·3층이 없는 경우)
+      const hasPension = analysis.firstRow.pensionBalance > 0;
+      if (!hasPension) {
+        const remainingYearsToRetire = Math.max(0, (planInputs?.retirementStartAge ?? 65) - (planInputs?.currentAge ?? 50));
+        const yearlyContrib = 6000000; // 연금저축 연 600만원
+        const estimatedBalance = remainingYearsToRetire > 0
+          ? Math.round(yearlyContrib * remainingYearsToRetire * 1.15) // 수익률 감안 대략치
+          : yearlyContrib * 5; // 이미 은퇴했어도 5년 납입 가정
+        items.push({
+          id: "pension-new",
+          title: "지금이라도 연금저축 가입: 절세 + 노후소득 확보",
+          description: `퇴직연금·개인연금이 없으면 국민연금만으로 생활비를 감당해야 합니다. 연금저축은 나이·직업 제한 없이 누구나 가입 가능하며, 매년 최대 148.5만원의 세액공제와 저율 연금소득세(3.3~5.5%) 혜택을 받을 수 있어요.`,
+          impact: `연 600만원 납입 시 매년 세액공제 최대 99만원`,
+          impactType: "positive",
+          details: [
+            "가입 자격: 나이·소득 제한 없음 (은퇴자도 가능)",
+            "세액공제: 연금저축 연 600만원 + IRP 합산 900만원까지",
+            "수령 시 세금: 55세 이후 연 1,500만원 이하 분리과세 (3.3~5.5%)",
+            remainingYearsToRetire > 0
+              ? `${remainingYearsToRetire}년 납입 시 예상 잔액: 약 ${formatKorean(estimatedBalance)}`
+              : "은퇴 후에도 가입·납입 가능 — 5년만 넣어도 세금 혜택이 큽니다",
+          ],
+          advice: "2층·3층 연금이 없다면, 지금 당장 연금저축 계좌를 하나 여는 것이 가장 먼저 할 일입니다. 은퇴 후라도 소득이 있으면 세액공제를 받을 수 있고, 소득이 없더라도 나중에 저율 과세로 수령할 수 있어요.",
+          actionTip: "증권사 앱에서 '연금저축펀드' 계좌를 개설하고, 월 50만원 자동이체부터 시작하세요. ISA 만기 자금을 연금으로 이전하면 추가 세액공제도 받을 수 있습니다.",
+          changes: [
+            { field: 'totalPension', value: 0, delta: estimatedBalance, label: `연금저축 +${formatKorean(estimatedBalance)}` },
+          ],
+        });
+      }
+
     } else {
       // ===== 성공 시: 보수적 최적화 =====
       items.push({
@@ -598,8 +645,9 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
             width: 100, height: 100, borderRadius: "50%",
             background: "rgba(255,255,255,0.06)",
           }} />
-          {/* 좌측: 캐릭터 */}
+          {/* PC: 캐릭터 좌측 고정 */}
           <img
+            className="hero-character"
             src={isFireSuccess ? "/images/result-success.png" : "/images/result-fail.png"}
             alt={isFireSuccess ? "성공" : "실패"}
             style={{
@@ -612,11 +660,26 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
           />
           {/* 우측: 텍스트 */}
           <div style={{ position: "relative" as const, flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
-              {isFireSuccess
-                ? "든든한 계획이 완성되었어요."
-                : `${assetDepletionAge}세부터 지출이 수입을 추월하기 시작해요.`}
+            {/* 모바일: 캐릭터+제목 한 줄 */}
+            <div className="hero-title-row" style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 10 }}>
+              <img
+                className="hero-character-mobile"
+                src={isFireSuccess ? "/images/result-success.png" : "/images/result-fail.png"}
+                alt={isFireSuccess ? "성공" : "실패"}
+                style={{
+                  display: "none",
+                  width: 80, height: "auto",
+                  flexShrink: 0,
+                  filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.2))",
+                }}
+              />
+              <div style={{ fontSize: 17, fontWeight: 700, color: "#fff", lineHeight: 1.4 }}>
+                {isFireSuccess
+                  ? "든든한 계획이 완성되었어요."
+                  : `${assetDepletionAge}세부터 지출이 수입을 추월하기 시작해요.`}
+              </div>
             </div>
+            {/* 설명 텍스트 */}
             {isFireSuccess && analysis && planInputs ? (
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, margin: 0, wordBreak: "keep-all" as const }}>
                 {planInputs.retirementStartAge}세에 은퇴하더라도 {planInputs.nationalPensionStartAge > planInputs.retirementStartAge
@@ -628,7 +691,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", lineHeight: 1.8, margin: 0, wordBreak: "keep-all" as const }}>
                 <p style={{ margin: '0 0 6px' }}>
                   {planInputs ? `${planInputs.retirementStartAge}세에 은퇴하면 ` : ''}
-                  월 생활비 {formatKorean(analysis.avgLivingCost / 12)}으로
+                  월 생활비 <PlanTooltip text={planInputs ? `입력한 생활비 ${formatAmount(planInputs.monthlyLivingCostBefore75)}원 + 건보료 약 ${formatAmount(Math.round(analysis.avgLivingCost / 12 - planInputs.monthlyLivingCostBefore75))}원이 합산된 금액이에요.` : '입력한 생활비에 건강보험료가 합산된 금액이에요.'}><span style={{ textDecoration: 'underline', textDecorationStyle: 'dotted' as const, textUnderlineOffset: 3, cursor: 'help' }}>{formatKorean(analysis.avgLivingCost / 12)}</span></PlanTooltip>으로
                   {planInputs && planInputs.nationalPensionStartAge > (planInputs.retirementStartAge || 55)
                     ? ` 국민연금 수령 전(${planInputs.retirementStartAge}~${planInputs.nationalPensionStartAge - 1}세) ${planInputs.nationalPensionStartAge - planInputs.retirementStartAge}년 동안 자산이 버틸 수 있는 힘이 급격히 약해집니다.`
                     : ' 수입보다 지출이 커서 자산이 버틸 수 있는 힘이 급격히 약해집니다.'}
@@ -643,23 +706,24 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
 
         {/* 하단 지표 */}
         {analysis && !isFireSuccess && (
-          <div className="result-metrics" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 0 }}>
+          <div className="result-metrics" style={{ display: "grid", gridTemplateColumns: isMobileDevice ? "1fr" : "repeat(2, 1fr)", gap: 0 }}>
             <div style={{
               padding: "16px 12px",
-              textAlign: "center" as const,
-              borderRight: "1px solid var(--border-secondary)",
+              textAlign: isMobileDevice ? "left" as const : "center" as const,
+              borderRight: isMobileDevice ? "none" : "1px solid var(--border-secondary)",
+              borderBottom: isMobileDevice ? "1px solid var(--border-secondary)" : "none",
             }}>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 4 }}>{isFireSuccess ? `${planInputs?.simulationEndAge ?? 90}세까지 남는 금액` : `월 ${formatAmount(planInputs?.monthlyLivingCostBefore75 ?? 0)}원 기준, ${planInputs?.simulationEndAge ?? 90}세까지 부족한 금액`}</div>
-              <div className="toss-number" style={{ fontSize: 15, fontWeight: 700, color: isFireSuccess ? "var(--color-success)" : "var(--color-error)", whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginBottom: 4 }}>{isFireSuccess ? `${planInputs?.simulationEndAge ?? 90}세까지 남는 금액` : `월 ${formatAmount(planInputs?.monthlyLivingCostBefore75 ?? 0)}원 기준, ${planInputs?.simulationEndAge ?? 90}세까지 부족한 금액`}</div>
+              <div className="toss-number" style={{ fontSize: 17, fontWeight: 800, color: isFireSuccess ? "var(--color-success)" : "var(--color-error)" }}>
                 {formatKorean(Math.abs(analysis.totalSurplus))}
               </div>
             </div>
             <div style={{
               padding: "16px 12px",
-              textAlign: "center" as const,
+              textAlign: isMobileDevice ? "left" as const : "center" as const,
             }}>
-              <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 4 }}>가장 어려운 시점</div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", whiteSpace: "nowrap" }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginBottom: 4 }}>가장 어려운 시점</div>
+              <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)" }}>
                 {analysis.minSurplusRow.age}세 ({formatKorean(analysis.minSurplusRow.yearlySurplus)})
               </div>
             </div>
@@ -708,7 +772,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               return [
                 { label: "은퇴 시작", value: retireValue, prev: changed(orig?.retirementStartAge, planInputs.retirementStartAge) ? `${orig!.retirementStartAge}세` : null },
                 { label: "월 생활비", value: costValue, prev: changed(orig?.monthlyLivingCostBefore75, planInputs.monthlyLivingCostBefore75) ? `${formatAmount(orig!.monthlyLivingCostBefore75)}원` : null },
-                { label: "국민연금", value: `${planInputs.nationalPensionStartAge}세부터 연 ${formatAmount(planInputs.nationalPensionYearly)}원`, prev: changed(orig?.nationalPensionStartAge, planInputs.nationalPensionStartAge) ? `${orig!.nationalPensionStartAge}세` : null },
+                ...(planInputs.nationalPensionYearly > 0 ? [{ label: "국민연금", value: `${planInputs.nationalPensionStartAge}세부터 연 ${formatAmount(planInputs.nationalPensionYearly)}원`, prev: changed(orig?.nationalPensionStartAge, planInputs.nationalPensionStartAge) ? `${orig!.nationalPensionStartAge}세` : null }] : []),
                 { label: "연금 인출", value: planInputs.usePensionDepletion ? "매년 고르게 나눠 쓰기" : "필요할 때만 꺼내 쓰기", prev: null },
                 { label: "시뮬 기간", value: `${analysis.simulationYears}년 (${planInputs.retirementStartAge}~${planInputs.simulationEndAge}세)`, prev: null },
                 ...(planInputs.totalDebt > 0 && analysis.firstRow.debtBalance > 0 ? [{ label: "부채", value: `${formatAmount(analysis.firstRow.debtBalance)}원 (은퇴 시점 잔액)`, prev: null }] : planInputs.totalDebt > 0 ? [{ label: "부채", value: "은퇴 전 상환 완료", prev: null }] : []),
@@ -773,8 +837,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               setFilledAccounts({});
               onApplyStrategies?.(allChanges, true);
             }}
-            className="apply-strategy-btn"
-            style={{ padding: "8px 16px", fontSize: 12, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", gap: 5 }}
+            style={{ padding: "10px 18px", fontSize: 14, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", gap: 5 }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 제이의 전략으로 즉시 탈출하기
           </button>
@@ -784,14 +847,14 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       {/* 계좌별 목표 잔액 (실패 시 표시) */}
       {!isFireSuccess && analysis && analysis.accountTargets && (
         <div style={{ margin: "0 16px 12px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            <Target size={15} /> {planInputs?.retirementStartAge ?? 55}세 은퇴 시점, 계좌별 권장 잔액
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+            <Target size={16} /> {planInputs?.retirementStartAge ?? 55}세 은퇴 시점, 계좌별 권장 잔액
           </div>
-          <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: "0 0 12px" }}>
+          <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", margin: "0 0 12px" }}>
             {planInputs?.simulationEndAge ?? 90}세까지 자산이 유지되기 위한 최소 금액입니다.
           </p>
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
-            {Object.entries(analysis.accountTargets).filter(([, a]) => a.target > 0 || a.current > 0).map(([key, account]) => {
+            {Object.entries(analysis.accountTargets).filter(([, a]) => (a.target > 0 || a.current > 0) && (!isFireSuccess ? a.current < a.target : true)).map(([key, account]) => {
               const filledAmount = filledAccounts[key] ?? 0;
               const dragExtra = dragAmounts[key] ?? 0;
               const adjustedCurrent = account.current + filledAmount + dragExtra;
@@ -802,159 +865,99 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               const isFilled = key in filledAccounts;
               return (
                 <div key={key} style={{ padding: "10px 12px", borderRadius: 8, background: isFilled ? "rgba(0,177,187,0.06)" : "var(--bg-secondary)", border: isFilled ? "1px solid rgba(0,177,187,0.3)" : "1px solid transparent" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{account.label}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {isFilled ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: "#00b1bb" }}>
-                            +{formatKorean(filledAccounts[key])} 반영됨 ✓
-                          </span>
-                          <button
-                            onClick={() => {
-                              const amount = filledAccounts[key];
-                              const changes: StrategyChange[] = [];
-                              if (key === 'pension') {
-                                changes.push({ field: 'totalPension', value: 0, delta: -amount, label: `연금 -${formatKorean(amount)}` });
-                              } else if (key === 'isa') {
-                                changes.push({ field: 'husbandISA', value: 0, delta: -amount, label: `ISA -${formatKorean(amount)}` });
-                              } else if (key === 'overseas') {
-                                changes.push({ field: 'overseasInvestmentAmount', value: 0, delta: -amount, label: `해외직투 -${formatKorean(amount)}` });
-                              } else if (key === 'savings') {
-                                changes.push({ field: 'savingsAmount', value: 0, delta: -amount, label: `예적금 -${formatKorean(amount)}` });
-                              }
-                              if (changes.length > 0) {
-                                onApplyStrategies?.(changes, false);
-                                setFilledAccounts(prev => { const next = { ...prev }; delete next[key]; return next; });
-                              }
-                            }}
-                            style={{ padding: "2px 8px", fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)", background: "none", border: "1px solid var(--border-primary)", borderRadius: 4, cursor: "pointer" }}
-                          >
-                            취소
-                          </button>
-                        </div>
-                      ) : isEnough ? (
-                        <span style={{ fontSize: 12, fontWeight: 600, color: "#00b1bb" }}>달성</span>
-                      ) : null}
-                      {!isEnough && !isFilled && (
-                        <button
-                          onClick={() => {
-                            const amount = dragExtra > 0 ? dragExtra : gap;
-                            const changes: StrategyChange[] = [];
-                            let filledAmt = amount;
-                            if (key === 'pension') {
-                              changes.push({ field: 'totalPension', value: 0, delta: amount, label: `연금 +${formatKorean(amount)}` });
-                            } else if (key === 'isa') {
-                              const isaMax = 100000000;
-                              const isaGap = Math.min(amount, Math.max(0, isaMax - account.current));
-                              filledAmt = isaGap;
-                              if (isaGap > 0) changes.push({ field: 'husbandISA', value: 0, delta: isaGap, label: `ISA +${formatKorean(isaGap)}` });
-                            } else if (key === 'overseas') {
-                              changes.push({ field: 'overseasInvestmentAmount', value: 0, delta: amount, label: `해외직투 +${formatKorean(amount)}` });
-                            } else if (key === 'savings') {
-                              changes.push({ field: 'savingsAmount', value: 0, delta: amount, label: `예적금 +${formatKorean(amount)}` });
-                            }
-                            if (changes.length > 0) {
-                              onApplyStrategies?.(changes, false);
-                              setFilledAccounts(prev => ({ ...prev, [key]: filledAmt }));
-                              setDragAmounts(prev => { const next = { ...prev }; delete next[key]; return next; });
-                              setTimeout(() => {
-                                const targetId = key === 'pension' ? 'section-pension' : `asset-${key}`;
-                                const el = document.getElementById(targetId);
-                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                              }, 300);
-                            }
-                          }}
-                          className="btn-fill"
-                          style={{ padding: "4px 12px", fontSize: 11, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 6, cursor: "pointer" }}
-                        >
-                          {dragExtra > 0 ? `+${formatKorean(dragExtra)} 채우기` : '채우기'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--text-tertiary)", marginBottom: 6 }}>
-                    <span>예상 잔액 {formatKorean(adjustedCurrent)}</span>
-                    <span>권장 {formatKorean(account.target)}</span>
-                  </div>
                   {(() => {
-                    const canDrag = !isFilled && !isEnough && account.target > 0;
+                    const barColors: Record<string, string> = { pension: "#ef4444", isa: "#3b82f6", overseas: "#8b5cf6", savings: "#f59e0b" };
+                    const barColor = barColors[key] || "#9ca3af";
                     const basePercent = account.target > 0 ? Math.min(100, Math.round((account.current + filledAmount) / account.target * 100)) : 0;
-                    const dragPercent = dragExtra > 0 ? Math.min(100 - basePercent, Math.round(dragExtra / account.target * 100)) : 0;
-                    const handlePercent = Math.min(100, basePercent + dragPercent);
-                    const handleDrag = canDrag ? (e: React.PointerEvent) => {
-                      e.preventDefault();
-                      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-                      const bar = e.currentTarget as HTMLElement;
-                      const update = (clientX: number) => {
-                        const rect = bar.getBoundingClientRect();
-                        const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-                        const targetVal = ratio * account.target;
-                        const base = account.current + filledAmount;
-                        const extra = Math.max(0, targetVal - base);
-                        const rounded = Math.round(extra / 1000000) * 1000000;
-                        setDragAmounts(prev => {
-                          if (rounded <= 0) { const n = { ...prev }; delete n[key]; return n; }
-                          return { ...prev, [key]: rounded };
-                        });
-                      };
-                      update(e.clientX);
-                    } : undefined;
-                    const handleMove = canDrag ? (e: React.PointerEvent) => {
-                      if (e.pressure === 0) return;
-                      const bar = e.currentTarget as HTMLElement;
-                      const rect = bar.getBoundingClientRect();
-                      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                      const targetVal = ratio * account.target;
-                      const base = account.current + filledAmount;
-                      const extra = Math.max(0, targetVal - base);
-                      const rounded = Math.round(extra / 1000000) * 1000000;
-                      setDragAmounts(prev => {
-                        if (rounded <= 0) { const n = { ...prev }; delete n[key]; return n; }
-                        return { ...prev, [key]: rounded };
-                      });
-                    } : undefined;
+                    const fillPercent = Math.min(100, percent);
                     return (
-                      <div
-                        onPointerDown={handleDrag}
-                        onPointerMove={handleMove}
-                        style={{ height: 24, borderRadius: 6, background: "var(--border-secondary)", position: "relative", cursor: canDrag ? "pointer" : "default", touchAction: "none", userSelect: "none", padding: "8px 0" }}
-                      >
-                        {/* 트랙 */}
-                        <div style={{ position: "absolute", top: 8, left: 0, right: 0, height: 8, borderRadius: 4, background: "var(--border-secondary)", overflow: "hidden" }}>
-                          {/* 기존 잔액 + 드래그 추가분을 하나로 연결 */}
-                          <div style={{ position: "absolute", height: "100%", width: `${handlePercent}%`, borderRadius: 4, overflow: "hidden", display: "flex" }}>
-                            <div style={{ width: dragExtra > 0 ? `${Math.round(basePercent / handlePercent * 100)}%` : "100%", height: "100%", background: (basePercent >= 100 && dragExtra === 0) ? "#00b1bb" : "#9ca3af", flexShrink: 0 }} />
-                            {dragExtra > 0 && (
-                              <div style={{ flex: 1, height: "100%", background: "rgba(0,177,187,0.5)" }} />
+                      <>
+                        {/* 헤더: 라벨 + 채우기 */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{account.label}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {isFilled ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#00b1bb" }}>
+                                  +{formatKorean(filledAccounts[key])} 반영됨 ✓
+                                </span>
+                                <button
+                                  onClick={() => {
+                                    const amount = filledAccounts[key];
+                                    const changes: StrategyChange[] = [];
+                                    if (key === 'pension') {
+                                      changes.push({ field: 'totalPension', value: 0, delta: -amount, label: `연금 -${formatKorean(amount)}` });
+                                    } else if (key === 'isa') {
+                                      changes.push({ field: 'husbandISA', value: 0, delta: -amount, label: `ISA -${formatKorean(amount)}` });
+                                    } else if (key === 'overseas') {
+                                      changes.push({ field: 'overseasInvestmentAmount', value: 0, delta: -amount, label: `해외직투 -${formatKorean(amount)}` });
+                                    } else if (key === 'savings') {
+                                      changes.push({ field: 'savingsAmount', value: 0, delta: -amount, label: `예적금 -${formatKorean(amount)}` });
+                                    }
+                                    if (changes.length > 0) {
+                                      onApplyStrategies?.(changes, false);
+                                      setFilledAccounts(prev => { const next = { ...prev }; delete next[key]; return next; });
+                                    }
+                                  }}
+                                  style={{ padding: "2px 8px", fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)", background: "none", border: "1px solid var(--border-primary)", borderRadius: 4, cursor: "pointer" }}
+                                >
+                                  취소
+                                </button>
+                              </div>
+                            ) : isEnough ? (
+                              <span style={{ fontSize: 12, fontWeight: 600, color: "#00b1bb" }}>달성 ✓</span>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  const amount = gap;
+                                  const changes: StrategyChange[] = [];
+                                  let filledAmt = amount;
+                                  if (key === 'pension') {
+                                    changes.push({ field: 'totalPension', value: 0, delta: amount, label: `연금 +${formatKorean(amount)}` });
+                                  } else if (key === 'isa') {
+                                    const isaMax = 100000000;
+                                    const isaGap = Math.min(amount, Math.max(0, isaMax - account.current));
+                                    filledAmt = isaGap;
+                                    if (isaGap > 0) changes.push({ field: 'husbandISA', value: 0, delta: isaGap, label: `ISA +${formatKorean(isaGap)}` });
+                                  } else if (key === 'overseas') {
+                                    changes.push({ field: 'overseasInvestmentAmount', value: 0, delta: amount, label: `해외직투 +${formatKorean(amount)}` });
+                                  } else if (key === 'savings') {
+                                    changes.push({ field: 'savingsAmount', value: 0, delta: amount, label: `예적금 +${formatKorean(amount)}` });
+                                  }
+                                  if (changes.length > 0) {
+                                    onApplyStrategies?.(changes, false);
+                                    setFilledAccounts(prev => ({ ...prev, [key]: filledAmt }));
+                                    setDragAmounts(prev => { const next = { ...prev }; delete next[key]; return next; });
+                                    setTimeout(() => {
+                                      const targetId = key === 'pension' ? 'section-pension' : `asset-${key}`;
+                                      const el = document.getElementById(targetId);
+                                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }, 300);
+                                  }
+                                }}
+                                style={{ padding: 0, fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", background: "none", border: "none", cursor: "pointer" }}
+                              >
+                                채우기 →
+                              </button>
                             )}
                           </div>
                         </div>
-                        {/* 100% 기준선 */}
-                        <div style={{ position: "absolute", top: 5, left: "100%", width: 1, height: 14, background: "var(--text-quaternary, #ccc)", transform: "translateX(-1px)" }} />
-                        {/* 드래그 핸들 */}
-                        {canDrag && (
+                        {/* 프로그레스 바 */}
+                        <div style={{ height: 6, borderRadius: 3, background: "var(--border-secondary)", overflow: "hidden" }}>
                           <div style={{
-                            position: "absolute", top: "50%", left: `${handlePercent}%`,
-                            width: 18, height: 18, borderRadius: "50%",
-                            background: "linear-gradient(145deg, #b0b7c0, #8b929b)", border: "2px solid #fff",
-                            boxShadow: "0 2px 4px rgba(0,0,0,0.2), inset 0 1px 2px rgba(255,255,255,0.4)",
-                            transform: "translate(-50%, -50%)", cursor: "grab",
+                            height: "100%", borderRadius: 3, width: `${fillPercent}%`,
+                            background: isEnough
+                              ? barColor
+                              : `linear-gradient(90deg, ${barColor} ${Math.round(basePercent / Math.max(1, fillPercent) * 100)}%, ${barColor}88 ${Math.round(basePercent / Math.max(1, fillPercent) * 100)}%)`,
+                            transition: "width 0.3s ease",
                           }} />
-                        )}
-                        {/* 드래그 중 금액 표시 */}
-                        {dragExtra > 0 && canDrag && (
-                          <div style={{
-                            position: "absolute", bottom: 20, left: `${handlePercent}%`,
-                            transform: "translateX(-50%)",
-                            padding: "2px 8px", borderRadius: 4,
-                            background: "rgba(0,177,187,0.15)", color: "#00b1bb",
-                            fontSize: 10, fontWeight: 600, whiteSpace: "nowrap",
-                          }}>
-                            +{formatKorean(dragExtra)}
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                        {/* 금액 라벨 */}
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 12, fontWeight: 500 }}>
+                          <span style={{ color: barColor }}>{formatKorean(adjustedCurrent)}</span>
+                          <span style={{ color: "var(--text-tertiary)" }}>{formatKorean(account.target)}</span>
+                        </div>
+                      </>
                     );
                   })()}
                 </div>
@@ -962,7 +965,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
             })}
           </div>
           {analysis.bridgeYears > 0 && (
-            <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 10, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginTop: 10, lineHeight: 1.5 }}>
               * 은퇴({planInputs?.retirementStartAge}세)부터 국민연금 수령({planInputs?.nationalPensionStartAge}세)까지 <strong style={{ color: "var(--text-secondary)" }}>{analysis.bridgeYears}년</strong>의 소득 공백기가 있습니다. ISA·예적금으로 이 기간을 버틸 수 있어야 합니다.
             </p>
           )}
@@ -1029,9 +1032,9 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 <div style={{
                     width: 28, height: 28, borderRadius: 8, flexShrink: 0,
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    background: scenario.impactType === "positive" ? "var(--color-profit-bg)" : "var(--bg-tertiary)",
+                    background: "var(--color-profit-bg)",
                     fontSize: 13, fontWeight: 700,
-                    color: scenario.impactType === "positive" ? "var(--color-profit)" : "var(--text-tertiary)",
+                    color: "var(--color-profit)",
                   }}>
                     {idx + 1}
                   </div>
@@ -1040,24 +1043,18 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 </div>
                 <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: expandedScenario === scenario.id ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </div>
-              <div style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 6, lineHeight: 1.6, wordBreak: "keep-all" as const, paddingLeft: 38 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginTop: 6, lineHeight: 1.6, wordBreak: "keep-all" as const, paddingLeft: 38 }}>
                 {scenario.description}
               </div>
             </div>
 
             {expandedScenario === scenario.id && (
               <div style={{ padding: "0 16px 14px", borderTop: "1px solid var(--border-secondary)" }}>
-                {/* J의 조언 */}
-                {scenario.advice && (
-                  <div style={{ marginTop: 12, padding: "12px 14px", borderRadius: 8, background: "var(--bg-secondary)", lineHeight: 1.7 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent-blue)", marginBottom: 4 }}>J의 조언</div>
-                    <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, wordBreak: "keep-all" as const }}>{scenario.advice}</p>
-                  </div>
-                )}
+                {/* J의 조언 - 숨김 */}
                 {/* 실행 팁 */}
                 {scenario.actionTip && (
                   <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, border: "1px dashed var(--border-primary)", lineHeight: 1.7 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-profit)", marginBottom: 4 }}>실행 팁</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-profit)", marginBottom: 4 }}>실행 팁</div>
                     <p style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, wordBreak: "keep-all" as const }}>{scenario.actionTip}</p>
                   </div>
                 )}
@@ -1078,24 +1075,6 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       </div>
 
       {/* 하단 안내 */}
-      <div style={{ margin: "24px 16px 0", padding: "16px 20px", background: "var(--bg-primary)", border: "1px solid var(--border-primary)", borderRadius: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", marginBottom: 12 }}>
-          활용 팁
-        </div>
-        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            "생활비 절약은 가장 빠르고 확실한 탈출 비결이에요.",
-            "수익률은 욕심내기보다 안전하게 설정하는 걸 추천해요.",
-            "국민연금은 나의 건강과 계획에 맞춰 신중하게 선택하세요.",
-            "자산에 변화가 생길 때마다 지도를 새로 그려보는 게 좋아요.",
-          ].map((text, i) => (
-            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.6 }}>
-              <span style={{ flexShrink: 0, color: "var(--text-disabled)" }}>·</span>
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
       <div style={{ height: 120 }} />
 
       {/* 관리자 전용: 기능 설명 버튼 */}
