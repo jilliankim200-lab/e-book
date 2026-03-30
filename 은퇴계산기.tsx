@@ -108,7 +108,7 @@ interface InputValues {
   // 2층: 퇴직연금 (복수 계좌)
   retirementPensions: RetirementPension[];
   // 하위 호환용 (계산에 사용 - retirementPensions에서 합산)
-  retirementPensionType: 'irp' | 'db' | 'dc';
+  retirementPensionType: 'db' | 'dc';
   retirementPensionBalance: number;
   retirementPensionReturnRate: number;
   // 3층: 개인연금 (복수 계좌)
@@ -146,19 +146,19 @@ interface InputValues {
 
 interface RetirementPension {
   id: string;
-  type: 'irp' | 'db' | 'dc';
+  type: 'db' | 'dc';
   name: string;
   balance: number;
   returnRate: number;
 }
 
-function createDefaultRetirementPension(type: 'irp' | 'db' | 'dc'): RetirementPension {
+function createDefaultRetirementPension(type: 'db' | 'dc'): RetirementPension {
   const id = 'rp-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const name = type === 'irp' ? 'IRP' : type === 'db' ? 'DB형' : 'DC형';
+  const name = type === 'db' ? 'DB형' : 'DC형';
   return { id, type, name, balance: 0, returnRate: type === 'db' ? 0 : 0.05 };
 }
 
-type PersonalPensionType = 'pension_savings' | 'pension_insurance';
+type PersonalPensionType = 'pension_savings' | 'irp';
 
 interface PersonalPension {
   id: string;
@@ -172,7 +172,7 @@ interface PersonalPension {
 
 function createDefaultPersonalPension(type: PersonalPensionType): PersonalPension {
   const id = 'pp-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const name = type === 'pension_savings' ? '연금저축' : '연금보험';
+  const name = type === 'irp' ? 'IRP' : '연금저축';
   return { id, type, name, balance: 0, returnRate: 0.05 };
 }
 
@@ -195,7 +195,7 @@ const ASSET_TYPE_OPTIONS: { value: AssetType; label: string }[] = [
   { value: 'isa', label: 'ISA' },
   { value: 'overseas', label: '해외직투' },
   { value: 'savings', label: '예적금/현금' },
-  { value: 'life_insurance', label: '생명보험연금' },
+  { value: 'life_insurance', label: '연금보험' },
   { value: 'real_estate', label: '부동산/주택연금' },
   { value: 'custom', label: '기타 자산' },
 ];
@@ -206,7 +206,7 @@ function createDefaultAsset(type: AssetType): AdditionalAsset {
     case 'isa': return { id, type, name: 'ISA', balance: 0, returnRate: 0.05 };
     case 'overseas': return { id, type, name: '해외직투', balance: 0, returnRate: 0.07 };
     case 'savings': return { id, type, name: '예적금/현금', balance: 0, returnRate: 0.03 };
-    case 'life_insurance': return { id, type, name: '생명보험연금', balance: 0, returnRate: 0, startAge: 55, monthlyAmount: 0 };
+    case 'life_insurance': return { id, type, name: '연금보험', balance: 0, returnRate: 0, startAge: 55, monthlyAmount: 0 };
     case 'real_estate': return { id, type, name: '부동산/주택연금', balance: 0, returnRate: 0, startAge: 55, monthlyAmount: 0 };
     case 'custom': return { id, type, name: '', balance: 0, returnRate: 0.03 };
   }
@@ -228,7 +228,7 @@ interface SimulationRow {
   pensionAfterTax: number;
   nationalPension: number;
   homePension: number;
-  lifeInsurancePension: number; // 생명보험연금
+  lifeInsurancePension: number; // 연금보험
   totalIncome: number;
   totalExpense: number;
   yearlySurplus: number;
@@ -275,7 +275,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     nationalPensionYearly: 0,
     // 2층: 퇴직연금
     retirementPensions: [],
-    retirementPensionType: 'irp',
+    retirementPensionType: 'dc',
     retirementPensionBalance: 0,
     retirementPensionReturnRate: 0.05,
     // 3층: 개인연금
@@ -285,7 +285,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     pensionReturnRate: 0.05,
     pensionExcessTaxRate: 0.15,
     pensionStartAge: 55,
-    usePensionDepletion: false,
+    usePensionDepletion: true,
     // 추가자산 (기존 호환)
     husbandISA: 0, wifeISA: 0, isaReturnRate: 0.05,
     overseasInvestmentAmount: 0, overseasReturnRate: 0.07,
@@ -330,11 +330,11 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           setInputs({
             ...parsed.inputs,
             pensionWithdrawalAmount: parsed.inputs.pensionWithdrawalAmount ?? 50000000,
-            usePensionDepletion: parsed.inputs.usePensionDepletion ?? false,
+            usePensionDepletion: parsed.inputs.usePensionDepletion ?? true,
             // 기존 데이터 호환성: monthlyLivingCost를 75세 이전 값으로 변환
             monthlyLivingCostBefore75: parsed.inputs.monthlyLivingCostBefore75 ?? parsed.inputs.monthlyLivingCost ?? 7000000,
             monthlyLivingCostAfter75: parsed.inputs.monthlyLivingCostAfter75 ?? 5000000,
-            // 생명보험연금 기본값
+            // 연금보험 기본값
             lifeInsurancePensionStartAge: parsed.inputs.lifeInsurancePensionStartAge ?? 55,
             lifeInsurancePensionYearly: parsed.inputs.lifeInsurancePensionYearly ?? 1450000,
             // 배우자 은퇴시작나이 기본값
@@ -346,12 +346,15 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
             overseasReturnRate: parsed.inputs.overseasReturnRate ?? 0.07,
             // 연금 수익률 기본값
             pensionReturnRate: parsed.inputs.pensionReturnRate ?? 0.05,
-            // 퇴직연금 기본값
-            retirementPensions: parsed.inputs.retirementPensions ?? [],
-            retirementPensionType: parsed.inputs.retirementPensionType ?? 'irp',
+            // 퇴직연금 기본값 (IRP → 3층 마이그레이션)
+            retirementPensions: (parsed.inputs.retirementPensions ?? []).filter((rp: any) => rp.type !== 'irp'),
+            retirementPensionType: parsed.inputs.retirementPensionType === 'irp' ? 'dc' : (parsed.inputs.retirementPensionType ?? 'dc'),
             retirementPensionBalance: parsed.inputs.retirementPensionBalance ?? 0,
             retirementPensionReturnRate: parsed.inputs.retirementPensionReturnRate ?? 0.05,
-            personalPensions: parsed.inputs.personalPensions ?? [],
+            personalPensions: [
+              ...(parsed.inputs.personalPensions ?? []),
+              ...(parsed.inputs.retirementPensions ?? []).filter((rp: any) => rp.type === 'irp').map((rp: any) => ({ ...rp, type: 'irp' })),
+            ],
             // 신규 항목 기본값
             savingsAmount: parsed.inputs.savingsAmount ?? 0,
             savingsReturnRate: parsed.inputs.savingsReturnRate ?? 0.03,
@@ -731,7 +734,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
         ? inputs.homePensionMonthly * 12
         : 0;
 
-      // 생명보험연금
+      // 연금보험
       const lifeInsurancePension = currentAge >= inputs.lifeInsurancePensionStartAge
         ? inputs.lifeInsurancePensionYearly
         : 0;
@@ -1158,7 +1161,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     nationalPensionStartAge: 65,
     nationalPensionYearly: 0,
     retirementPensions: [],
-    retirementPensionType: 'irp',
+    retirementPensionType: 'dc',
     retirementPensionBalance: 0,
     retirementPensionReturnRate: 0.05,
     personalPensions: [],
@@ -1241,7 +1244,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
         retirementPensionType: 'dc', retirementPensionBalance: 80000000, retirementPensionReturnRate: 0.05,
         personalPensions: [
           { id: 'ex-40s-ps', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 60000000, returnRate: 0.05 },
-          { id: 'ex-40s-pi', type: 'pension_insurance' as PersonalPensionType, name: '연금보험', balance: 40000000, returnRate: 0.04 },
+          { id: 'ex-40s-pi', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 40000000, returnRate: 0.04 },
         ],
         totalPension: 100000000, pensionWithdrawalAmount: 18000000, pensionReturnRate: 0.05, pensionStartAge: 55, usePensionDepletion: true,
         husbandISA: 40000000, wifeISA: 0, isaReturnRate: 0.05,
@@ -1262,19 +1265,18 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '52세 싱글 (자산 5억)',
       img: '/images/tip3.png',
-      desc: <>현재 <B>52세</B> 싱글이고, 은퇴는 <B>55세</B>를 하려고 해요. 희망하는 한달 생활비는 <B>400만원</B>이에요. 은퇴 시점에 퇴직연금(IRP) <B>1.5억</B>, 연금저축 2개(<B>8,000만원</B> + <B>3,000만원</B>), 연금보험 <B>4,000만원</B>, ISA <B>5,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>5,000만원</B>이 예상돼요. 생명보험연금(<B>55세</B>부터 연 <B>200만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>80만원</B>)도 있어요. 대출은 없고, <B>70세</B>에 의료비 <B>2,000만원</B>을 예상하고 있어요.</>,
+      desc: <>현재 <B>52세</B> 싱글이고, 은퇴는 <B>55세</B>를 하려고 해요. 희망하는 한달 생활비는 <B>400만원</B>이에요. 은퇴 시점에 퇴직연금(IRP) <B>1.5억</B>, 연금저축 2개(<B>8,000만원</B> + <B>3,000만원</B>), 연금보험 <B>4,000만원</B>, ISA <B>5,000만원</B>, 해외직투 <B>5,000만원</B>, 예적금 <B>5,000만원</B>이 예상돼요. 연금보험(<B>55세</B>부터 연 <B>200만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>80만원</B>)도 있어요. 대출은 없고, <B>70세</B>에 의료비 <B>2,000만원</B>을 예상하고 있어요.</>,
       data: {
         currentAge: 52, retirementStartAge: 55, simulationEndAge: 90,
         monthlyLivingCostBefore75: 4000000, monthlyLivingCostAfter75: 3000000, inflationRate: 2,
         nationalPensionStartAge: 65, nationalPensionYearly: 20000000,
-        retirementPensions: [
-          { id: 'ex-50s-irp', type: 'irp', name: 'IRP', balance: 150000000, returnRate: 0.05 },
-        ],
-        retirementPensionType: 'irp', retirementPensionBalance: 150000000, retirementPensionReturnRate: 0.05,
+        retirementPensions: [],
+        retirementPensionType: 'dc', retirementPensionBalance: 0, retirementPensionReturnRate: 0.05,
         personalPensions: [
+          { id: 'ex-50s-irp', type: 'irp' as PersonalPensionType, name: 'IRP', balance: 150000000, returnRate: 0.05 },
           { id: 'ex-50s-ps1', type: 'pension_savings' as PersonalPensionType, name: '연금저축 1', balance: 80000000, returnRate: 0.05 },
           { id: 'ex-50s-ps2', type: 'pension_savings' as PersonalPensionType, name: '연금저축 2', balance: 30000000, returnRate: 0.05 },
-          { id: 'ex-50s-pi', type: 'pension_insurance' as PersonalPensionType, name: '연금보험', balance: 40000000, returnRate: 0.04 },
+          { id: 'ex-50s-pi', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 40000000, returnRate: 0.04 },
         ],
         totalPension: 150000000, pensionWithdrawalAmount: 24000000, pensionReturnRate: 0.05, pensionStartAge: 55, usePensionDepletion: false,
         husbandISA: 50000000, wifeISA: 0, isaReturnRate: 0.05,
@@ -1286,7 +1288,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           { id: 'ex-50s-isa', type: 'isa' as AssetType, name: 'ISA', balance: 50000000, returnRate: 0.05 },
           { id: 'ex-50s-overseas', type: 'overseas' as AssetType, name: '해외직투', balance: 50000000, returnRate: 0.07 },
           { id: 'ex-50s-savings', type: 'savings' as AssetType, name: '예적금', balance: 50000000, returnRate: 0.03 },
-          { id: 'ex-50s-insurance', type: 'life_insurance' as AssetType, name: '생명보험연금', balance: 0, returnRate: 0, startAge: 55, monthlyAmount: 2000000 },
+          { id: 'ex-50s-insurance', type: 'life_insurance' as AssetType, name: '연금보험', balance: 0, returnRate: 0, startAge: 55, monthlyAmount: 2000000 },
           { id: 'ex-50s-home', type: 'real_estate' as AssetType, name: '부동산/주택연금', balance: 400000000, returnRate: 0, startAge: 65, monthlyAmount: 800000 },
         ],
         totalDebt: 0, irregularExpenses: [{ name: '의료비', age: 70, amount: 20000000 }],
@@ -1306,7 +1308,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
         retirementPensionType: 'dc', retirementPensionBalance: 100000000, retirementPensionReturnRate: 0.05,
         personalPensions: [
           { id: 'ex-45-ps', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 100000000, returnRate: 0.06 },
-          { id: 'ex-45-pi', type: 'pension_insurance' as PersonalPensionType, name: '연금보험', balance: 50000000, returnRate: 0.04 },
+          { id: 'ex-45-pi', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 50000000, returnRate: 0.04 },
         ],
         totalPension: 150000000, pensionWithdrawalAmount: 20000000, pensionReturnRate: 0.06, pensionStartAge: 55, usePensionDepletion: true,
         husbandISA: 50000000, wifeISA: 0, isaReturnRate: 0.05,
@@ -1330,15 +1332,14 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
         currentAge: 53, retirementStartAge: 54, simulationEndAge: 85,
         monthlyLivingCostBefore75: 5000000, monthlyLivingCostAfter75: 4000000, inflationRate: 2,
         nationalPensionStartAge: 65, nationalPensionYearly: 24000000,
-        retirementPensions: [
-          { id: 'ex-53-irp1', type: 'irp', name: 'IRP 1', balance: 120000000, returnRate: 0.05 },
-          { id: 'ex-53-irp2', type: 'irp', name: 'IRP 2', balance: 80000000, returnRate: 0.05 },
-        ],
-        retirementPensionType: 'irp', retirementPensionBalance: 200000000, retirementPensionReturnRate: 0.05,
+        retirementPensions: [],
+        retirementPensionType: 'dc', retirementPensionBalance: 0, retirementPensionReturnRate: 0.05,
         personalPensions: [
+          { id: 'ex-53-irp1', type: 'irp' as PersonalPensionType, name: 'IRP 1', balance: 120000000, returnRate: 0.05 },
+          { id: 'ex-53-irp2', type: 'irp' as PersonalPensionType, name: 'IRP 2', balance: 80000000, returnRate: 0.05 },
           { id: 'ex-53-ps1', type: 'pension_savings' as PersonalPensionType, name: '연금저축 1', balance: 150000000, returnRate: 0.05 },
           { id: 'ex-53-ps2', type: 'pension_savings' as PersonalPensionType, name: '연금저축 2', balance: 100000000, returnRate: 0.05 },
-          { id: 'ex-53-pi', type: 'pension_insurance' as PersonalPensionType, name: '연금보험', balance: 50000000, returnRate: 0.04 },
+          { id: 'ex-53-pi', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 50000000, returnRate: 0.04 },
         ],
         totalPension: 300000000, pensionWithdrawalAmount: 30000000, pensionReturnRate: 0.05, pensionStartAge: 55, usePensionDepletion: false,
         husbandISA: 100000000, wifeISA: 100000000, isaReturnRate: 0.05,
@@ -1357,18 +1358,17 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     {
       label: '62세 은퇴자 (연금 중심)',
       img: '/images/tip3.png',
-      desc: <>현재 <B>62세</B>이고, 지금 바로 은퇴를 하려고 해요. 희망하는 한달 생활비는 <B>350만원</B>이에요. 국민연금은 <B>63세</B>부터 연 <B>2,000만원</B> 수령 예정이에요. 퇴직연금(IRP) <B>1.5억</B>, 연금저축 <B>1.2억</B>, 연금보험 <B>8,000만원</B>이 있어요. ISA <B>3,000만원</B>, 예적금 <B>8,000만원</B>, 생명보험연금(<B>60세</B>부터 연 <B>300만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>70만원</B>)도 있어요. 대출은 없어요.</>,
+      desc: <>현재 <B>62세</B>이고, 지금 바로 은퇴를 하려고 해요. 희망하는 한달 생활비는 <B>350만원</B>이에요. 국민연금은 <B>63세</B>부터 연 <B>2,000만원</B> 수령 예정이에요. 퇴직연금(IRP) <B>1.5억</B>, 연금저축 <B>1.2억</B>, 연금보험 <B>8,000만원</B>이 있어요. ISA <B>3,000만원</B>, 예적금 <B>8,000만원</B>, 연금보험(<B>60세</B>부터 연 <B>300만원</B>), 부동산 <B>4억</B>(<B>65세</B>부터 주택연금 월 <B>70만원</B>)도 있어요. 대출은 없어요.</>,
       data: {
         currentAge: 62, retirementStartAge: 62, simulationEndAge: 90,
         monthlyLivingCostBefore75: 3500000, monthlyLivingCostAfter75: 2500000, inflationRate: 2,
         nationalPensionStartAge: 63, nationalPensionYearly: 20000000,
-        retirementPensions: [
-          { id: 'ex-62-irp', type: 'irp', name: 'IRP', balance: 150000000, returnRate: 0.04 },
-        ],
-        retirementPensionType: 'irp', retirementPensionBalance: 150000000, retirementPensionReturnRate: 0.04,
+        retirementPensions: [],
+        retirementPensionType: 'dc', retirementPensionBalance: 0, retirementPensionReturnRate: 0.04,
         personalPensions: [
+          { id: 'ex-62-irp', type: 'irp' as PersonalPensionType, name: 'IRP', balance: 150000000, returnRate: 0.04 },
           { id: 'ex-62-ps', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 120000000, returnRate: 0.04 },
-          { id: 'ex-62-pi', type: 'pension_insurance' as PersonalPensionType, name: '연금보험', balance: 80000000, returnRate: 0.04 },
+          { id: 'ex-62-pi', type: 'pension_savings' as PersonalPensionType, name: '연금저축', balance: 80000000, returnRate: 0.04 },
         ],
         totalPension: 200000000, pensionWithdrawalAmount: 24000000, pensionReturnRate: 0.04, pensionStartAge: 60, usePensionDepletion: true,
         husbandISA: 30000000, wifeISA: 0, isaReturnRate: 0.04,
@@ -1379,7 +1379,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
         additionalAssets: [
           { id: 'ex3-isa', type: 'isa' as AssetType, name: 'ISA', balance: 30000000, returnRate: 0.04 },
           { id: 'ex3-savings', type: 'savings' as AssetType, name: '예적금', balance: 80000000, returnRate: 0.03 },
-          { id: 'ex3-insurance', type: 'life_insurance' as AssetType, name: '생명보험연금', balance: 0, returnRate: 0, startAge: 60, monthlyAmount: 3000000 },
+          { id: 'ex3-insurance', type: 'life_insurance' as AssetType, name: '연금보험', balance: 0, returnRate: 0, startAge: 60, monthlyAmount: 3000000 },
           { id: 'ex3-home', type: 'real_estate' as AssetType, name: '부동산/주택연금', balance: 400000000, returnRate: 0, startAge: 65, monthlyAmount: 700000 },
         ],
         totalDebt: 0, irregularExpenses: [{ name: '의료비', age: 75, amount: 30000000 }],
@@ -1454,7 +1454,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
   const downloadCSV = () => {
     const headers = [
       '나이', '년도', 'ISA인출', '해외배당', '해외매도', '개인연금(세후)', 
-      '주택연금', '국민연금', '생명보험연금', '총수입', '생활비', '건보료', '총지출', '남는금액', 
+      '주택연금', '국민연금', '연금보험', '총수입', '생활비', '건보료', '총지출', '남는금액', 
       'ISA잔액', '연금잔액', '해외투자잔액'
     ];
     
@@ -1494,7 +1494,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
   const downloadExcel = () => {
     const headers = [
       '나이', '년도', 'ISA인출', '해외배당', '해외매도', '개인연금(세후)', 
-      '주택연금', '국민연금', '생명보험연금', '총수입', '생활비', '건보료', '총지출', '남는금액', 
+      '주택연금', '국민연금', '연금보험', '총수입', '생활비', '건보료', '총지출', '남는금액', 
       'ISA잔액', '연금잔액', '해외투자잔액'
     ];
     
@@ -1696,7 +1696,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
               title="내 정보 직접 입력하기"
             >
               <PenLine style={{ width: 14, height: 14 }} />
-              <span className="reset-label">내 정보 직접 입력하기</span>
+              <span className="reset-label"><Tooltip text="은퇴 후 보유 자산을 매년 고르게 나눠 쓰며 현금흐름을 계산합니다">내 정보 직접 입력하기 ⓘ</Tooltip></span>
             </button>
             <div className="recent-calc-btn" style={{ marginLeft: 0, display: 'none' }}>
             {(() => { const hasSaved = !!localStorage.getItem('cashFlowData'); return (
@@ -1951,9 +1951,8 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                     <button className="btn-delete" onClick={removeRP} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-tertiary, #aaa)" /></button>
                     <select value={rp.type} onChange={(e) => updateRP('type', e.target.value)}
                       className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
-                      <option value="irp">IRP</option>
-                      <option value="dc">DC</option>
-                      <option value="db">DB</option>
+                      <option value="dc">DC형</option>
+                      <option value="db">DB형</option>
                     </select>
                     <span className="mobile-hide-label" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>{rp.type === 'db' ? '예상 퇴직급여' : '적립금'} <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>(은퇴 시점)</span></span>
                     <input type="text" value={formatInputAmount(rp.balance)} onChange={(e) => updateRP('balance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
@@ -1978,7 +1977,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           {/* 퇴직연금 추가 버튼 */}
           <div style={{ marginTop: inputs.retirementPensions.length > 0 ? 12 : 0, paddingTop: inputs.retirementPensions.length > 0 ? 12 : 0, borderTop: inputs.retirementPensions.length > 0 ? '1px solid var(--border-secondary)' : 'none' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, border: '1px dashed var(--border-primary)', cursor: 'pointer', transition: 'all 0.15s' }}
-              onClick={() => setInputs(prev => ({ ...prev, retirementPensions: [...prev.retirementPensions, createDefaultRetirementPension('irp')] }))}>
+              onClick={() => setInputs(prev => ({ ...prev, retirementPensions: [...prev.retirementPensions, createDefaultRetirementPension('dc')] }))}>
               <span style={{ fontSize: 18, color: 'var(--accent-blue)', lineHeight: 1 }}>+</span>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>퇴직연금 계좌 추가</span>
             </div>
@@ -1996,7 +1995,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                 style={{ padding: '3px 8px', fontSize: 10, fontWeight: 500, borderRadius: 6, transition: 'all 0.2s', background: pensionInputMode === 'accumulate' ? '#fff' : 'transparent', color: pensionInputMode === 'accumulate' ? 'var(--text-primary)' : 'var(--text-tertiary)', boxShadow: pensionInputMode === 'accumulate' ? '0 1px 2px rgba(0,0,0,0.08)' : 'none' }}>적립식</span>
             </div>
           </div>
-          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>{pensionInputMode === 'direct' ? '연금저축, 연금보험 계좌를 추가하세요.' : '현재 잔액과 연 납입액으로 은퇴 시점 자산을 자동 계산합니다.'}</p>
+          <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>{pensionInputMode === 'direct' ? 'IRP, 연금저축 계좌를 추가하세요.' : '현재 잔액과 연 납입액으로 은퇴 시점 자산을 자동 계산합니다.'}</p>
 
           {inputs.personalPensions.map((pp, ppIdx) => {
             const updatePP = (field: string, value: any) => {
@@ -2031,7 +2030,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                       <select value={pp.type} onChange={(e) => updatePP('type', e.target.value)}
                         className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
                         <option value="pension_savings">연금저축</option>
-                        <option value="pension_insurance">연금보험</option>
+                        <option value="irp">IRP</option>
                       </select>
                       <span className="mobile-hide-label" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>잔액 <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>(은퇴 시점)</span></span>
                       <input type="text" value={formatInputAmount(pp.balance)} onChange={(e) => updatePP('balance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
@@ -2051,7 +2050,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                       <select value={pp.type} onChange={(e) => updatePP('type', e.target.value)}
                         className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
                         <option value="pension_savings">연금저축</option>
-                        <option value="pension_insurance">연금보험</option>
+                        <option value="irp">IRP</option>
                       </select>
                       <span className="mobile-hide-label" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
                       <input type="text" value={formatInputAmount(pp.currentBalance || 0)} onChange={(e) => updatePP('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
@@ -2130,6 +2129,12 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 16 }}>{assetInputMode === 'direct' ? '은퇴 시점에 보유할 예상 자산을 입력하세요.' : '현재 잔액과 연 납입액으로 은퇴 시점 자산을 자동 계산합니다.'}</p>
 
           {inputs.additionalAssets.map((asset, idx) => {
+            // ISA는 1인 1계좌 — 이미 다른 행에서 사용 중이면 드롭다운에서 비활성화
+            const SINGLE_ACCOUNT_TYPES: AssetType[] = ['isa'];
+            const usedSingleTypes = inputs.additionalAssets
+              .filter((_, i) => i !== idx)
+              .map(a => a.type)
+              .filter(t => SINGLE_ACCOUNT_TYPES.includes(t));
             const updateAsset = (field: string, value: any) => {
               const updated = [...inputs.additionalAssets];
               updated[idx] = { ...updated[idx], [field]: value };
@@ -2137,8 +2142,8 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
               if (asset.type === 'isa') {
                 if (field === 'balance') {
                   const cappedValue = Math.min(value as number, 100000000); // ISA 인당 최대 1억
-                  const cappedAssets = updated.map(a => a.type === 'isa' ? { ...a, balance: cappedValue } : a);
-                  setInputs(prev => ({ ...prev, additionalAssets: cappedAssets, husbandISA: cappedValue, wifeISA: 0 }));
+                  updated[idx] = { ...updated[idx], balance: cappedValue };
+                  setInputs(prev => ({ ...prev, additionalAssets: updated, husbandISA: cappedValue, wifeISA: 0 }));
                 }
                 if (field === 'returnRate') setInputs(prev => ({ ...prev, additionalAssets: updated, isaReturnRate: value }));
               }
@@ -2196,7 +2201,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                     <button className="btn-delete" onClick={removeAsset} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-tertiary, #aaa)" /></button>
                     <select value={asset.type} onChange={(e) => updateAsset('type', e.target.value)}
                       className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
-                      {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value} disabled={usedSingleTypes.includes(opt.value as AssetType)}>{opt.label}{usedSingleTypes.includes(opt.value as AssetType) ? ' (1인1계좌)' : ''}</option>)}
                     </select>
                     <span className="mobile-hide-label" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>{asset.type === 'real_estate' ? '시가' : '잔액'} {canAccumulate && <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>(은퇴 시점)</span>}</span>
                     <input type="text" value={formatInputAmount(asset.balance)} onChange={(e) => updateAsset('balance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
@@ -2220,7 +2225,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                     <button className="btn-delete" onClick={removeAsset} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-tertiary, #aaa)" /></button>
                     <select value={asset.type} onChange={(e) => updateAsset('type', e.target.value)}
                       className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
-                      {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                      {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value} disabled={usedSingleTypes.includes(opt.value as AssetType)}>{opt.label}{usedSingleTypes.includes(opt.value as AssetType) ? ' (1인1계좌)' : ''}</option>)}
                     </select>
                     <span className="mobile-hide-label" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
                     <input type="text" value={formatInputAmount(asset.currentBalance || 0)} onChange={(e) => updateAsset('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
@@ -2281,7 +2286,11 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           {/* 추가 버튼 */}
           <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-secondary)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8, border: '1px dashed var(--border-primary)', cursor: 'pointer', transition: 'all 0.15s' }}
-              onClick={() => setInputs(prev => ({ ...prev, additionalAssets: [...prev.additionalAssets, createDefaultAsset('isa')] }))}>
+              onClick={() => {
+                const hasISA = inputs.additionalAssets.some(a => a.type === 'isa');
+                const defaultType = hasISA ? 'overseas' : 'isa';
+                setInputs(prev => ({ ...prev, additionalAssets: [...prev.additionalAssets, createDefaultAsset(defaultType)] }));
+              }}>
               <span style={{ fontSize: 18, color: 'var(--accent-blue)', lineHeight: 1 }}>+</span>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>자산 추가</span>
             </div>
@@ -2591,7 +2600,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                 <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
                     {columns.map(col => (
-                      <th key={col.header} style={{ padding: '10px 10px', fontWeight: 600, color: 'var(--text-tertiary)', fontSize: 11, whiteSpace: 'nowrap', borderBottom: '1px solid var(--border-primary)', borderRight: '1px solid var(--border-secondary)', background: 'var(--bg-secondary)', textAlign: 'right' }}>{col.header}</th>
+                      <th key={col.header} style={{ padding: '10px 10px', fontWeight: 600, color: 'var(--text-tertiary)', fontSize: 11, whiteSpace: 'nowrap', borderBottom: '1px solid var(--border-primary)', borderRight: '1px solid var(--border-secondary)', background: 'var(--bg-secondary)', textAlign: 'right' }}>{col.header === '남는 금액' ? <Tooltip text="매년 생활비와 수입을 계산하여 남는(또는 부족한) 금액입니다.">{col.header} ⓘ</Tooltip> : col.header}</th>
                     ))}
                   </tr>
                 </thead>
@@ -2625,9 +2634,9 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
           { title: '연 생활비', dot: 'var(--text-tertiary)', formula: '월 생활비 x 12 x (1 + 물가상승률/100) ^ 연차', note: '75세 미만/이상 월 생활비가 다르게 적용됩니다. 연차 = 현재나이 - 은퇴시작나이 (0부터 시작).' },
           { title: '국민연금 (세후)', dot: '#4f46e5', formula: '기준연금액 x 조정계수 x (1 + 물가상승률/100) ^ 경과년수 x (1 - 나이별 세율)', note: '조기: 1년당 6% 감액(최대 30%). 연기: 1년당 7.2% 증액(최대 36%). 경과년수 = 현재나이 - 수령시작나이 (첫 해 0 = 물가상승 미적용).' },
           { title: '주택연금', dot: '#ea580c', formula: '월 수령액 x 12', note: '비과세 소득. 설정한 개시 나이부터 매년 동일 금액.' },
-          { title: '생명보험연금', dot: '#0891b2', formula: '연 수령액 (고정)', note: '설정한 개시 나이부터 매년 동일 금액을 수령합니다.' },
+          { title: '연금보험', dot: '#0891b2', formula: '연 수령액 (고정)', note: '설정한 개시 나이부터 매년 동일 금액을 수령합니다.' },
           { title: '해외직투 배당 (세후)', dot: '#059669', formula: '해외주식 잔액 x 6% x (1 - 15.4%)', note: '배당소득세 15.4% 원천징수 후 수령액.' },
-          { title: '연금 (세후)', dot: '#9333ea', formula: '[일반] MIN(필요금액/0.945, 설정인출액, 잔액)\n[소진모드] 잔액 x (r x (1+r)^n) / ((1+r)^n - 1)', note: '퇴직연금 + 개인연금 합산 잔액. 수익률은 각각의 초기 잔액 비율로 가중평균 적용. 세금: 1,500만원 이내 나이별 세율(5.5/4.4/3.3%), 초과분 별도 세율.' },
+          { title: '연금 (세후)', dot: '#9333ea', formula: '[일반] MIN(필요금액/0.945, 설정인출액, 잔액)\n[소진모드] 잔액 x (r x (1+r)^n) / ((1+r)^n - 1)', note: '퇴직연금(DB/DC) + 개인연금(IRP/연금저축) 합산 잔액. 수익률은 각각의 초기 잔액 비율로 가중평균 적용. 세금: 1,500만원 이내 나이별 세율(5.5/4.4/3.3%), 초과분 별도 세율.' },
           { title: 'ISA 인출', dot: 'var(--accent-blue)', formula: '[일반] MIN(생활비+건보료-고정수입-해외배당-연금세후, ISA잔액)\n[소진모드] ISA잔액 x (r x (1+r)^n) / ((1+r)^n - 1)', note: '일반모드: 다른 소득으로 충당 후 부족분만 인출. 소진모드: PMT 균등 인출.' },
           { title: '해외주식 매도', dot: '#059669', formula: '[일반] MIN(잔여 부족분, 해외주식잔액)\n[소진모드] 잔액 x (r x (1+r)^n) / ((1+r)^n - 1), r = 수익률 - 6%', note: '일반모드: 배당+연금+ISA로도 부족 시에만 매도. 소진모드: 배당 6% 별도 수령, 성장분만 PMT 소진. * 양도소득세(22%, 250만 비과세)는 미반영 — 실제보다 유리하게 계산됩니다.' },
           { title: '건강보험료', dot: '#dc2626', formula: '(소득점수 + 재산점수) x 218.8원 x 12개월', note: '소득점수 = 개인연금세후 x 0.002 / 1,000. 재산점수 = MAX(0, 공시가격 - 1억) x 0.0000005. 주택은 시가가 아닌 공시가격(시가의 60~70%) 기준. 국민연금/주택연금/ISA/해외배당은 건보 미반영.' },
