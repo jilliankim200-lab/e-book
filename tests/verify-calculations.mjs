@@ -471,6 +471,154 @@ runTest("10. 수익률 적용 검증", () => {
 });
 
 
+// ---- 적립식 복리 계산 검증 ----
+
+function calcAccumulated(currentBalance, yearlyContribution, returnRate, years) {
+  if (years <= 0) return currentBalance;
+  if (returnRate === 0) return currentBalance + yearlyContribution * years;
+  const compounded = Math.pow(1 + returnRate, years);
+  return Math.round(currentBalance * compounded + yearlyContribution * (compounded - 1) / returnRate);
+}
+
+runTest("11. TC-23: 개인연금 적립식 복수 계좌", () => {
+  const n = 20; // 35세 → 55세
+  const ps = calcAccumulated(5000000, 6000000, 0.05, n);  // 연금저축
+  const pi = calcAccumulated(3000000, 4000000, 0.03, n);  // 연금보험
+  assert("연금저축 55세 잔액", ps, 211662213, 10);
+  assert("연금보험 55세 잔액", pi, 112899832, 10);
+  console.log(`  연금저축: ${fmt(ps)} (약 2.1억)`);
+  console.log(`  연금보험: ${fmt(pi)} (약 1.1억)`);
+  console.log(`  합계: ${fmt(ps + pi)} (약 3.2억)`);
+
+  // 이 잔액으로 시뮬레이션
+  const result = simulateFromMD({
+    retireAge: 55, endAge: 90,
+    costBefore75: 3000000, costAfter75: 2100000, inflationRate: 0.02,
+    npStartAge: 65, npYearly: 9600000,
+    hpStartAge: 999, hpMonthly: 0,
+    liStartAge: 999, liYearly: 0,
+    pensionStartAge: 55,
+    pensionBalance: ps + pi + 100000000, // 개인연금 합계 + DC 1억
+    pensionRate: 0.05,
+    pensionMaxWithdrawal: 15000000,
+    excessTaxRate: 0.165,
+    isaBalance: 0, isaRate: 0.05,
+    overseasBalance: 0, overseasRate: 0.07,
+    savingsBalance: 0, savingsRate: 0.03,
+    totalDebt: 0, debtEndAge: 0, monthlyDebtRepay: 0,
+    useDepletion: true,
+    irregularExpenses: [],
+  });
+  assert("행 수", result.length, 36);
+  assert("55세 국민연금=0", result[0].nationalPension, 0);
+  const row65 = result.find(r => r.age === 65);
+  assert("65세 국민연금>0", row65.nationalPension > 0 ? 1 : 0, 1);
+  console.log(`  55세 남는 금액: ${fmt(result[0].yearlySurplus)}`);
+  console.log(`  90세 연금잔액: ${fmt(result[35].pensionBalance)}`);
+});
+
+runTest("12. TC-24: 추가자산 적립식 다유형 + ISA 캡", () => {
+  const n = 20; // 35세 → 55세
+  const overseas = calcAccumulated(10000000, 5000000, 0.07, n);
+  const isaRaw = calcAccumulated(2000000, 8000000, 0.05, n);
+  const isa = Math.min(isaRaw, 100000000); // 1억 캡
+  const savings = calcAccumulated(5000000, 3000000, 0.02, n);
+
+  assert("해외직투 55세 잔액", overseas, 243674306, 10);
+  assert("ISA raw 잔액", isaRaw, 269834228, 10);
+  assert("ISA 캡 적용", isa, 100000000);
+  assert("예적금 55세 잔액", savings, 80321846, 10);
+
+  console.log(`  해외직투: ${fmt(overseas)} (약 2.4억)`);
+  console.log(`  ISA: ${fmt(isaRaw)} → 캡 적용 → ${fmt(isa)}`);
+  console.log(`  예적금: ${fmt(savings)} (약 8천만)`);
+
+  // 시뮬레이션
+  const result = simulateFromMD({
+    retireAge: 55, endAge: 90,
+    costBefore75: 2500000, costAfter75: 1750000, inflationRate: 0.02,
+    npStartAge: 65, npYearly: 8400000,
+    hpStartAge: 999, hpMonthly: 0,
+    liStartAge: 999, liYearly: 0,
+    pensionStartAge: 55,
+    pensionBalance: 50000000 + 30000000, // DC 5천 + 연금저축 3천
+    pensionRate: 0.05,
+    pensionMaxWithdrawal: 15000000,
+    excessTaxRate: 0.165,
+    isaBalance: isa, isaRate: 0.05,
+    overseasBalance: overseas, overseasRate: 0.07,
+    savingsBalance: savings, savingsRate: 0.02,
+    totalDebt: 0, debtEndAge: 0, monthlyDebtRepay: 0,
+    useDepletion: false,
+    irregularExpenses: [],
+  });
+  assert("행 수", result.length, 36);
+  assert("55세 해외배당>0", result[0].overseasDividend > 0 ? 1 : 0, 1);
+  console.log(`  55세 해외배당: ${fmt(result[0].overseasDividend)}`);
+  console.log(`  55세 남는 금액: ${fmt(result[0].yearlySurplus)}`);
+  console.log(`  90세 총잔액: ISA ${fmt(result[35].isaBalance)} + 해외 ${fmt(result[35].overseasBalance)} + 예적금 ${fmt(result[35].savingsBalance)}`);
+});
+
+runTest("13. TC-25: 전 계층 적립식 종합 (25년)", () => {
+  const n = 25; // 30세 → 55세
+  const dc = calcAccumulated(3000000, 5000000, 0.05, n);
+  const ps = calcAccumulated(1000000, 6000000, 0.06, n);
+  const pi = calcAccumulated(0, 3000000, 0.03, n);
+  const isaRaw = calcAccumulated(0, 10000000, 0.05, n);
+  const isa = Math.min(isaRaw, 100000000);
+  const overseas = calcAccumulated(5000000, 6000000, 0.07, n);
+  const savings = calcAccumulated(10000000, 2000000, 0.02, n);
+
+  assert("DC 55세 잔액", dc, 248794559, 10);
+  assert("연금저축 55세 잔액", ps, 333478943, 10);
+  assert("연금보험 55세 잔액", pi, 109377793, 10);
+  assert("ISA 캡 적용", isa, 100000000);
+  assert("해외직투 55세 잔액", overseas, 406631389, 10);
+  assert("예적금 55세 잔액", savings, 80466659, 10);
+
+  const totalAsset = dc + ps + pi + isa + overseas + savings;
+  console.log(`  DC: ${fmt(dc)}`);
+  console.log(`  연금저축: ${fmt(ps)}`);
+  console.log(`  연금보험: ${fmt(pi)}`);
+  console.log(`  ISA: ${fmt(isaRaw)} → 캡 → ${fmt(isa)}`);
+  console.log(`  해외직투: ${fmt(overseas)}`);
+  console.log(`  예적금: ${fmt(savings)}`);
+  console.log(`  총 자산: ${fmt(totalAsset)} (약 12.8억)`);
+
+  assert("총 자산 약 12.8억", totalAsset, 1278749343, 100);
+
+  // 시뮬레이션
+  const result = simulateFromMD({
+    retireAge: 55, endAge: 95,
+    costBefore75: 3000000, costAfter75: 2100000, inflationRate: 0.025,
+    npStartAge: 65, npYearly: 7200000,
+    hpStartAge: 999, hpMonthly: 0,
+    liStartAge: 999, liYearly: 0,
+    pensionStartAge: 55,
+    pensionBalance: dc + ps + pi, // 퇴직+개인 합계
+    pensionRate: 0.05,
+    pensionMaxWithdrawal: 15000000,
+    excessTaxRate: 0.165,
+    isaBalance: isa, isaRate: 0.05,
+    overseasBalance: overseas, overseasRate: 0.07,
+    savingsBalance: savings, savingsRate: 0.02,
+    totalDebt: 0, debtEndAge: 0, monthlyDebtRepay: 0,
+    useDepletion: true,
+    irregularExpenses: [],
+  });
+  assert("행 수", result.length, 41); // 55~95세
+  assert("55세 국민연금=0", result[0].nationalPension, 0);
+  const row65 = result.find(r => r.age === 65);
+  assert("65세 국민연금>0", row65.nationalPension > 0 ? 1 : 0, 1);
+
+  // 마지막 연도 잔액 확인
+  const last = result[result.length - 1];
+  console.log(`  55세 남는 금액: ${fmt(result[0].yearlySurplus)}`);
+  console.log(`  65세 국민연금: ${fmt(row65.nationalPension)}`);
+  console.log(`  95세 연금잔액: ${fmt(last.pensionBalance)}`);
+  console.log(`  95세 해외잔액: ${fmt(last.overseasBalance)}`);
+});
+
 // ============================================================
 // 4. 결과 출력
 // ============================================================

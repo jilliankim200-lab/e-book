@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 20px; font-family: sans-serif; }
+  .btn { padding: 14px 36px; font-size: 16px; background: #3182F6; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; }
+  .btn:hover { background: #277fd1; }
+  .info { color: #666; font-size: 13px; }
+  #capture { width: 860px; }
+</style>
+</head>
+<body>
+
+<div id="capture">
+  <!-- 캔버스에 렌더링 -->
+</div>
+<button class="btn" onclick="render()">PNG 다운로드 (860 x 2600)</button>
+<div class="info">860 x 2600px | 상세 이미지</div>
+
+<script>
+const W = 860, H = 2600;
+const container = document.getElementById('capture');
+
+function render() {
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  const charImg = new Image();
+  charImg.crossOrigin = 'anonymous';
+  charImg.src = 'public/images/login-character.png';
+
+  const charImg2 = new Image();
+  charImg2.crossOrigin = 'anonymous';
+  charImg2.src = 'public/images/j-avatar.png';
+
+  // 이미지 로드 후 그리기
+  let loaded = 0;
+  const onLoad = () => {
+    loaded++;
+    if (loaded >= 2) draw(ctx, charImg, charImg2);
+  };
+  charImg.onload = onLoad;
+  charImg2.onload = onLoad;
+  setTimeout(() => draw(ctx, charImg, charImg2), 1500);
+
+  function draw(ctx, charImg, charImg2) {
+    const mx = 80; // 좌우 마진
+
+    // =============================================
+    // SECTION 1: 히어로 (0 ~ 520)
+    // =============================================
+    const s1h = 520;
+    const bgGrad = ctx.createLinearGradient(0, 0, W * 0.6, s1h);
+    bgGrad.addColorStop(0, '#3182F6');
+    bgGrad.addColorStop(1, '#277fd1');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, s1h);
+
+    // 글로우
+    const g1 = ctx.createRadialGradient(W * 0.3, 200, 0, W * 0.3, 200, 350);
+    g1.addColorStop(0, 'rgba(255,255,255,0.06)');
+    g1.addColorStop(1, 'transparent');
+    ctx.fillStyle = g1;
+    ctx.fillRect(0, 0, W, s1h);
+
+    // 캐릭터
+    if (charImg.complete && charImg.naturalWidth > 0) {
+      const ch = 360;
+      const cw = ch * (charImg.naturalWidth / charImg.naturalHeight);
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 40;
+      ctx.shadowOffsetY = 15;
+      ctx.drawImage(charImg, 40, s1h - ch - 50, cw, ch);
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    }
+
+    // 텍스트
+    const tx = 340;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '400 13px "Noto Sans KR"';
+    ctx.fillText('은퇴 시뮬레이션 프로그램', tx, 100);
+
+    ctx.font = '900 48px "Noto Sans KR"';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('탈출지도', tx, 160);
+
+    ctx.font = '900 38px "Noto Sans KR"';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('본인의 숫자를 넣고', tx, 212);
+    ctx.fillText('현실을 보고', tx, 256);
+    ctx.fillText('계획을 세워라.', tx, 300);
+
+    // 입력 진단 전략 라인
+    const fy = 350;
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(tx + 20, fy); ctx.lineTo(tx + 260, fy); ctx.stroke();
+
+    const steps = ['입력', '진단', '전략'];
+    const sColors = ['#fff', '#fde68a', '#6ee7b7'];
+    steps.forEach((s, i) => {
+      const px = tx + 20 + i * 120;
+      ctx.beginPath(); ctx.arc(px, fy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = sColors[i]; ctx.fill();
+      ctx.font = '600 13px "Noto Sans KR"';
+      ctx.textAlign = 'center';
+      ctx.fillText(s, px, fy + 22);
+      ctx.textAlign = 'left';
+    });
+
+    // 태그
+    const tags1 = ['3층 연금', '세금·건보료', '현금흐름', '4가지 전략'];
+    let ttx = tx;
+    ctx.font = '400 12px "Noto Sans KR"';
+    tags1.forEach(tag => {
+      const tw = ctx.measureText(tag).width + 22;
+      ctx.fillStyle = 'rgba(255,255,255,0.1)';
+      roundRect(ctx, ttx, 408, tw, 28, 5); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText(tag, ttx + 11, 426);
+      ttx += tw + 8;
+    });
+
+    // 슬로건
+    ctx.font = '400 15px "Noto Sans KR"';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    const sl1 = '막연한 불안 대신, ';
+    ctx.fillText(sl1, tx, 476);
+    const sl1w = ctx.measureText(sl1).width;
+    ctx.font = '700 15px "Noto Sans KR"';
+    ctx.fillStyle = '#fff';
+    ctx.fillText('숫자로 확신', tx + sl1w, 476);
+    const sl2w = ctx.measureText('숫자로 확신').width;
+    ctx.font = '400 15px "Noto Sans KR"';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('을 드립니다', tx + sl1w + sl2w, 476);
+
+    // =============================================
+    // SECTION 2: 이런 고민 (520 ~ 1060)
+    // =============================================
+    let sy = s1h;
+    const s2h = 540;
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, sy, W, s2h);
+
+    // 라벨
+    ctx.fillStyle = '#3182F6';
+    ctx.font = '700 12px "Noto Sans KR"';
+    ctx.fillText('WHY', mx, sy + 60);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 30px "Noto Sans KR"';
+    ctx.fillText('혹시 이런 고민 하고 계신가요?', mx, sy + 100);
+
+    const pains = [
+      { icon: 'schedule', text: '"나는 몇 살까지 일해야 하는 걸까?"' },
+      { icon: 'account_balance_wallet', text: '"지금 모은 돈이 은퇴 후 몇 년이나 버틸까?"' },
+      { icon: 'trending_up', text: '"국민연금, 퇴직연금, IRP, ISA... 뭘 먼저?"' },
+      { icon: 'local_hospital', text: '"은퇴하면 건보료 폭탄 맞는다는데?"' },
+      { icon: 'help_outline', text: '"유튜브, 블로그 다 봤는데 내 상황에 맞는 답을 모르겠다"' },
+    ];
+
+    pains.forEach((p, i) => {
+      const py = sy + 140 + i * 72;
+
+      // 카드 배경
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.04)';
+      ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+      roundRect(ctx, mx, py, W - mx * 2, 60, 12); ctx.fill();
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+      // 아이콘 원
+      ctx.fillStyle = '#eff6ff';
+      ctx.beginPath(); ctx.arc(mx + 30, py + 30, 18, 0, Math.PI * 2); ctx.fill();
+
+      // 머티리얼 아이콘 (텍스트로)
+      ctx.font = '22px "Material Icons Outlined"';
+      ctx.fillStyle = '#3182F6';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.icon, mx + 30, py + 38);
+      ctx.textAlign = 'left';
+
+      // 텍스트
+      ctx.font = '400 15px "Noto Sans KR"';
+      ctx.fillStyle = '#334155';
+      ctx.fillText(p.text, mx + 64, py + 36);
+    });
+
+    // =============================================
+    // SECTION 3: 기능 소개 (1060 ~ 1640)
+    // =============================================
+    sy += s2h;
+    const s3h = 580;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, sy, W, s3h);
+
+    ctx.fillStyle = '#3182F6';
+    ctx.font = '700 12px "Noto Sans KR"';
+    ctx.fillText('FEATURES', mx, sy + 60);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 30px "Noto Sans KR"';
+    ctx.fillText('탈출지도가 보여주는 것들', mx, sy + 100);
+
+    const features = [
+      { icon: 'account_balance', title: '3층 연금 구조', desc: '국민연금 · 퇴직연금 DB/DC/IRP\n연금저축 · 연금보험까지 한번에', color: '#3182F6' },
+      { icon: 'bar_chart', title: '연도별 현금흐름', desc: '은퇴 시점부터 90세 이상까지\n매년 수입·지출·잔액 추적', color: '#059669' },
+      { icon: 'receipt_long', title: '세금 · 건보료 자동 계산', desc: '연금 인출 세율 4.4%~16.5%\n건보료 소득·재산 점수 반영', color: '#d97706' },
+      { icon: 'lightbulb', title: '4가지 전략 자동 제시', desc: '은퇴 연기 · 생활비 절감\n저축 확대 · 수익률 개선', color: '#7c3aed' },
+      { icon: 'show_chart', title: '물가상승률 반영', desc: '2~5% 물가상승률 설정\n75세 전후 생활비 차등', color: '#dc2626' },
+      { icon: 'event_note', title: '비정기 지출 · 부채', desc: '자녀 결혼, 의료비, 리모델링\n부채 상환 일정까지 반영', color: '#0891b2' },
+    ];
+
+    const cardW = (W - mx * 2 - 20) / 2;
+    const cardH = 130;
+    features.forEach((f, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const fx = mx + col * (cardW + 20);
+      const fy2 = sy + 130 + row * (cardH + 16);
+
+      // 카드
+      ctx.fillStyle = '#f8fafc';
+      roundRect(ctx, fx, fy2, cardW, cardH, 14); ctx.fill();
+
+      // 아이콘
+      ctx.fillStyle = f.color + '15';
+      ctx.beginPath(); ctx.arc(fx + 28, fy2 + 32, 20, 0, Math.PI * 2); ctx.fill();
+      ctx.font = '22px "Material Icons Outlined"';
+      ctx.fillStyle = f.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(f.icon, fx + 28, fy2 + 40);
+      ctx.textAlign = 'left';
+
+      // 타이틀
+      ctx.font = '700 16px "Noto Sans KR"';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(f.title, fx + 58, fy2 + 36);
+
+      // 설명
+      ctx.font = '400 13px "Noto Sans KR"';
+      ctx.fillStyle = '#64748b';
+      const lines = f.desc.split('\n');
+      lines.forEach((line, li) => {
+        ctx.fillText(line, fx + 58, fy2 + 62 + li * 20);
+      });
+    });
+
+    // =============================================
+    // SECTION 4: 3 STEP (1640 ~ 2060)
+    // =============================================
+    sy += s3h;
+    const s4h = 420;
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(0, sy, W, s4h);
+
+    ctx.fillStyle = '#3182F6';
+    ctx.font = '700 12px "Noto Sans KR"';
+    ctx.fillText('HOW IT WORKS', mx, sy + 60);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 30px "Noto Sans KR"';
+    ctx.fillText('3단계로 완성하는 탈출 계획', mx, sy + 100);
+
+    const stepData = [
+      { num: '1', title: '숫자를 넣고', desc: '나이 · 은퇴 시기\n연금 · 자산 · 생활비\n현실 그대로 입력', color: '#3182F6' },
+      { num: '2', title: '현실을 보고', desc: '자산 수명 진단\n연도별 수입/지출\n위험 구간 감지', color: '#d97706' },
+      { num: '3', title: '계획을 세워라', desc: '4가지 전략 제시\n클릭 한 번 적용\n나만의 로드맵', color: '#059669' },
+    ];
+
+    const stepW = (W - mx * 2 - 40) / 3;
+    stepData.forEach((s, i) => {
+      const sx2 = mx + i * (stepW + 20);
+      const sy2 = sy + 130;
+
+      // 카드
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0,0,0,0.04)';
+      ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+      roundRect(ctx, sx2, sy2, stepW, 260, 16); ctx.fill();
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+
+      // 넘버
+      ctx.fillStyle = s.color + '12';
+      ctx.beginPath(); ctx.arc(sx2 + stepW / 2, sy2 + 50, 28, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = s.color + '30';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sx2 + stepW / 2, sy2 + 50, 28, 0, Math.PI * 2); ctx.stroke();
+      ctx.font = '900 24px "Noto Sans KR"';
+      ctx.fillStyle = s.color;
+      ctx.textAlign = 'center';
+      ctx.fillText(s.num, sx2 + stepW / 2, sy2 + 58);
+
+      // 타이틀
+      ctx.font = '900 20px "Noto Sans KR"';
+      ctx.fillStyle = s.color;
+      ctx.fillText(s.title, sx2 + stepW / 2, sy2 + 110);
+
+      // 설명
+      ctx.font = '400 14px "Noto Sans KR"';
+      ctx.fillStyle = '#64748b';
+      s.desc.split('\n').forEach((line, li) => {
+        ctx.fillText(line, sx2 + stepW / 2, sy2 + 148 + li * 24);
+      });
+      ctx.textAlign = 'left';
+
+      // 화살표
+      if (i < 2) {
+        ctx.fillStyle = '#cbd5e1';
+        ctx.font = '20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('▸', sx2 + stepW + 10, sy2 + 130);
+        ctx.textAlign = 'left';
+      }
+    });
+
+    // =============================================
+    // SECTION 5: 추천 대상 (2060 ~ 2400)
+    // =============================================
+    sy += s4h;
+    const s5h = 340;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, sy, W, s5h);
+
+    ctx.fillStyle = '#3182F6';
+    ctx.font = '700 12px "Noto Sans KR"';
+    ctx.fillText('WHO', mx, sy + 60);
+
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 30px "Noto Sans KR"';
+    ctx.fillText('이런 분께 추천합니다', mx, sy + 100);
+
+    const targets = [
+      '"언제 퇴사할 수 있을까?" 매일 고민하는 직장인',
+      '연금·자산이 몇 년이나 버틸지 숫자로 확인하고 싶은 분',
+      'IRP, 연금저축, ISA 최적 운용법을 모르겠는 분',
+      '은퇴 후 건보료, 세금이 얼마나 나올지 알고 싶은 분',
+      '막연한 불안 대신, 숫자로 확신을 얻고 싶은 분',
+      'FIRE(조기은퇴) 현실적 시뮬레이션이 필요한 분',
+    ];
+
+    const tCardW = (W - mx * 2 - 16) / 2;
+    targets.forEach((t, i) => {
+      const col = i % 2;
+      const row = Math.floor(i / 2);
+      const tx2 = mx + col * (tCardW + 16);
+      const ty2 = sy + 130 + row * 62;
+
+      ctx.fillStyle = '#f8fafc';
+      roundRect(ctx, tx2, ty2, tCardW, 50, 10); ctx.fill();
+
+      // 체크
+      ctx.fillStyle = '#d1fae5';
+      roundRect(ctx, tx2 + 14, ty2 + 14, 22, 22, 6); ctx.fill();
+      ctx.font = '700 13px "Noto Sans KR"';
+      ctx.fillStyle = '#059669';
+      ctx.textAlign = 'center';
+      ctx.fillText('✓', tx2 + 25, ty2 + 31);
+      ctx.textAlign = 'left';
+
+      ctx.font = '400 13px "Noto Sans KR"';
+      ctx.fillStyle = '#475569';
+      ctx.fillText(t, tx2 + 46, ty2 + 32);
+    });
+
+    // =============================================
+    // SECTION 6: 클로징 (2400 ~ 2600)
+    // =============================================
+    sy += s5h;
+    const s6h = H - sy;
+    const cGrad = ctx.createLinearGradient(0, sy, 0, sy + s6h);
+    cGrad.addColorStop(0, '#3182F6');
+    cGrad.addColorStop(1, '#277fd1');
+    ctx.fillStyle = cGrad;
+    ctx.fillRect(0, sy, W, s6h);
+
+    // 캐릭터
+    if (charImg2.complete && charImg2.naturalWidth > 0) {
+      const ch = 140;
+      const cw = ch * (charImg2.naturalWidth / charImg2.naturalHeight);
+      ctx.shadowColor = 'rgba(0,0,0,0.2)';
+      ctx.shadowBlur = 20; ctx.shadowOffsetY = 8;
+      ctx.drawImage(charImg2, mx, sy + s6h / 2 - ch / 2, cw, ch);
+      ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+    }
+
+    const cx = mx + 180;
+    ctx.font = '900 24px "Noto Sans KR"';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('"막연한 불안을 확신으로', cx, sy + 60);
+    ctx.fillText('  바꾸는 숫자의 힘을 믿습니다."', cx, sy + 92);
+
+    ctx.font = '400 15px "Noto Sans KR"';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText('20년간 시스템을 설계해온 IT 개발자가,', cx, sy + 132);
+    ctx.fillText('본인의 은퇴 고민을 해결하기 위해 직접 만든 도구입니다.', cx, sy + 156);
+
+    ctx.font = '600 14px "Noto Sans KR"';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('탈출 조력자 J  |  POWER J\'s Escape Route Planner', cx, sy + 186);
+
+    // 다운로드
+    const link = document.createElement('a');
+    link.download = 'escape-map-detail-860x2600.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// 미리보기용 HTML 렌더
+function preview() {
+  container.innerHTML = `
+  <div style="width:860px; font-family:'Noto Sans KR',sans-serif;">
+    <!-- S1: 히어로 -->
+    <div style="height:520px; background:linear-gradient(135deg,#3182F6,#277fd1); display:flex; align-items:center; padding:0 80px; position:relative; overflow:hidden;">
+      <div style="position:absolute; top:0; left:0; right:0; bottom:0; background:radial-gradient(circle at 30% 40%, rgba(255,255,255,0.06), transparent 60%);"></div>
+      <div style="flex:0 0 260px; position:relative; z-index:1;">
+        <img src="public/images/login-character.png" style="width:220px; filter:drop-shadow(0 12px 30px rgba(0,0,0,0.25));" />
+      </div>
+      <div style="flex:1; position:relative; z-index:1; padding-left:20px;">
+        <div style="color:rgba(255,255,255,0.5); font-size:13px; margin-bottom:10px;">은퇴 시뮬레이션 프로그램</div>
+        <div style="font-size:48px; font-weight:900; color:#fff; margin-bottom:4px;">탈출지도</div>
+        <div style="font-size:38px; font-weight:900; color:rgba(255,255,255,0.4); line-height:1.25;">본인의 숫자를 넣고<br>현실을 보고<br>계획을 세워라.</div>
+        <div style="margin-top:24px; display:flex; align-items:center; gap:0;">
+          <div style="display:flex; align-items:center; gap:6px;"><div style="width:6px;height:6px;border-radius:50%;background:#fff;"></div><span style="color:#fff;font-size:13px;font-weight:600;">입력</span></div>
+          <span style="color:rgba(255,255,255,0.2); margin:0 16px;">—</span>
+          <div style="display:flex; align-items:center; gap:6px;"><div style="width:6px;height:6px;border-radius:50%;background:#fde68a;"></div><span style="color:#fde68a;font-size:13px;font-weight:600;">진단</span></div>
+          <span style="color:rgba(255,255,255,0.2); margin:0 16px;">—</span>
+          <div style="display:flex; align-items:center; gap:6px;"><div style="width:6px;height:6px;border-radius:50%;background:#6ee7b7;"></div><span style="color:#6ee7b7;font-size:13px;font-weight:600;">전략</span></div>
+        </div>
+        <div style="margin-top:24px; display:flex; gap:8px; flex-wrap:wrap;">
+          ${['3층 연금','세금·건보료','현금흐름','4가지 전략'].map(t => `<span style="padding:5px 12px; border-radius:5px; background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.75); font-size:12px;">${t}</span>`).join('')}
+        </div>
+        <div style="margin-top:20px; font-size:15px; color:rgba(255,255,255,0.5);">막연한 불안 대신, <strong style="color:#fff;">숫자로 확신</strong>을 드립니다</div>
+      </div>
+    </div>
+
+    <!-- S2: 고민 -->
+    <div style="padding:60px 80px; background:#f8fafc;">
+      <div style="color:#3182F6; font-size:12px; font-weight:700; letter-spacing:2px; margin-bottom:10px;">WHY</div>
+      <div style="font-size:30px; font-weight:900; color:#0f172a; margin-bottom:36px;">혹시 이런 고민 하고 계신가요?</div>
+      ${[
+        {icon:'schedule', text:'"나는 몇 살까지 일해야 하는 걸까?"'},
+        {icon:'account_balance_wallet', text:'"지금 모은 돈이 은퇴 후 몇 년이나 버틸까?"'},
+        {icon:'trending_up', text:'"국민연금, 퇴직연금, IRP, ISA... 뭘 먼저?"'},
+        {icon:'local_hospital', text:'"은퇴하면 건보료 폭탄 맞는다는데?"'},
+        {icon:'help_outline', text:'"유튜브, 블로그 다 봤는데 내 상황에 맞는 답을 모르겠다"'},
+      ].map(p => `
+        <div style="display:flex; align-items:center; gap:16px; background:#fff; border-radius:12px; padding:16px 20px; margin-bottom:10px; box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+          <div style="width:36px;height:36px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span class="material-icons-outlined" style="font-size:20px;color:#3182F6;">${p.icon}</span>
+          </div>
+          <div style="font-size:15px; color:#334155;">${p.text}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- S3: 기능 -->
+    <div style="padding:60px 80px; background:#fff;">
+      <div style="color:#3182F6; font-size:12px; font-weight:700; letter-spacing:2px; margin-bottom:10px;">FEATURES</div>
+      <div style="font-size:30px; font-weight:900; color:#0f172a; margin-bottom:36px;">탈출지도가 보여주는 것들</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        ${[
+          {icon:'account_balance', title:'3층 연금 구조', desc:'국민연금 · 퇴직연금 DB/DC/IRP<br>연금저축 · 연금보험까지 한번에', color:'#3182F6'},
+          {icon:'bar_chart', title:'연도별 현금흐름', desc:'은퇴 시점부터 90세 이상까지<br>매년 수입·지출·잔액 추적', color:'#059669'},
+          {icon:'receipt_long', title:'세금 · 건보료 자동 계산', desc:'연금 인출 세율 4.4%~16.5%<br>건보료 소득·재산 점수 반영', color:'#d97706'},
+          {icon:'lightbulb', title:'4가지 전략 자동 제시', desc:'은퇴 연기 · 생활비 절감<br>저축 확대 · 수익률 개선', color:'#7c3aed'},
+          {icon:'show_chart', title:'물가상승률 반영', desc:'2~5% 물가상승률 설정<br>75세 전후 생활비 차등', color:'#dc2626'},
+          {icon:'event_note', title:'비정기 지출 · 부채', desc:'자녀 결혼, 의료비, 리모델링<br>부채 상환 일정까지 반영', color:'#0891b2'},
+        ].map(f => `
+          <div style="background:#f8fafc; border-radius:14px; padding:24px 22px; display:flex; gap:16px; align-items:flex-start;">
+            <div style="width:40px;height:40px;border-radius:50%;background:${f.color}12;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span class="material-icons-outlined" style="font-size:22px;color:${f.color};">${f.icon}</span>
+            </div>
+            <div>
+              <div style="font-size:16px; font-weight:700; color:#0f172a; margin-bottom:6px;">${f.title}</div>
+              <div style="font-size:13px; color:#64748b; line-height:1.6;">${f.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- S4: 3 STEP -->
+    <div style="padding:60px 80px; background:#f8fafc;">
+      <div style="color:#3182F6; font-size:12px; font-weight:700; letter-spacing:2px; margin-bottom:10px;">HOW IT WORKS</div>
+      <div style="font-size:30px; font-weight:900; color:#0f172a; margin-bottom:36px;">3단계로 완성하는 탈출 계획</div>
+      <div style="display:flex; gap:20px; align-items:stretch;">
+        ${[
+          {num:'1', title:'숫자를 넣고', desc:'나이 · 은퇴 시기<br>연금 · 자산 · 생활비<br>현실 그대로 입력', color:'#3182F6'},
+          {num:'2', title:'현실을 보고', desc:'자산 수명 진단<br>연도별 수입/지출<br>위험 구간 감지', color:'#d97706'},
+          {num:'3', title:'계획을 세워라', desc:'4가지 전략 제시<br>클릭 한 번 적용<br>나만의 로드맵', color:'#059669'},
+        ].map((s,i) => `
+          <div style="flex:1; background:#fff; border-radius:16px; padding:36px 24px; text-align:center; box-shadow:0 1px 4px rgba(0,0,0,0.04); position:relative;">
+            <div style="width:56px;height:56px;border-radius:50%;background:${s.color}12;border:2px solid ${s.color}30;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;font-size:24px;font-weight:900;color:${s.color};">${s.num}</div>
+            <div style="font-size:20px; font-weight:900; color:${s.color}; margin-bottom:14px;">${s.title}</div>
+            <div style="font-size:14px; color:#64748b; line-height:1.8;">${s.desc}</div>
+            ${i < 2 ? '<div style="position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:#cbd5e1;font-size:18px;">▸</div>' : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- S5: 추천 -->
+    <div style="padding:60px 80px; background:#fff;">
+      <div style="color:#3182F6; font-size:12px; font-weight:700; letter-spacing:2px; margin-bottom:10px;">WHO</div>
+      <div style="font-size:30px; font-weight:900; color:#0f172a; margin-bottom:36px;">이런 분께 추천합니다</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        ${[
+          '"언제 퇴사할 수 있을까?" 매일 고민하는 직장인',
+          '연금·자산이 몇 년 버틸지 숫자로 확인하고 싶은 분',
+          'IRP, 연금저축, ISA 최적 운용법을 모르겠는 분',
+          '은퇴 후 건보료, 세금이 얼마나 나올지 알고 싶은 분',
+          '막연한 불안 대신, 숫자로 확신을 얻고 싶은 분',
+          'FIRE(조기은퇴) 현실적 시뮬레이션이 필요한 분',
+        ].map(t => `
+          <div style="display:flex; align-items:center; gap:12px; background:#f8fafc; border-radius:10px; padding:16px 18px;">
+            <div style="width:22px;height:22px;border-radius:6px;background:#d1fae5;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <span style="color:#059669;font-size:12px;font-weight:900;">✓</span>
+            </div>
+            <div style="font-size:13px; color:#475569;">${t}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <!-- S6: 클로징 -->
+    <div style="padding:50px 80px; background:linear-gradient(135deg,#3182F6,#277fd1); display:flex; align-items:center; gap:36px;">
+      <img src="public/images/j-avatar.png" style="width:120px; filter:drop-shadow(0 8px 20px rgba(0,0,0,0.2));" />
+      <div>
+        <div style="font-size:24px; font-weight:900; color:#fff; line-height:1.5; margin-bottom:14px;">"막연한 불안을 확신으로<br>바꾸는 숫자의 힘을 믿습니다."</div>
+        <div style="font-size:15px; color:rgba(255,255,255,0.6); line-height:1.7; margin-bottom:16px;">20년간 시스템을 설계해온 IT 개발자가,<br>본인의 은퇴 고민을 해결하기 위해 직접 만든 도구입니다.</div>
+        <div style="font-size:14px; color:rgba(255,255,255,0.4); margin-bottom:24px;">탈출 조력자 J  |  POWER J's Escape Route Planner</div>
+        <div style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.15); border-radius:12px; padding:18px 24px; display:flex; align-items:center; gap:14px;">
+          <span class="material-icons-outlined" style="font-size:24px; color:rgba(255,255,255,0.8);">menu_book</span>
+          <div>
+            <div style="font-size:14px; font-weight:700; color:#fff; margin-bottom:4px;">전자책에 탈출지도 접속 URL과 비밀번호가 포함되어 있습니다.</div>
+            <div style="font-size:12px; color:rgba(255,255,255,0.45);">전자책 구매 → URL 접속 → 비밀번호 입력 → 바로 시작</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+preview();
+</script>
+</body>
+</html>

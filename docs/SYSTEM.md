@@ -10,6 +10,7 @@
 - **이름**: 은퇴로드맵 (Retirement Roadmap)
 - **목적**: 은퇴 후 현금흐름을 시뮬레이션하고, 자산 고갈 시점을 예측하며, 맞춤형 재무 전략을 제안하는 전자책 부록 웹앱
 - **기술 스택**: React 19 + TypeScript + Vite + Lucide Icons
+- **폰트**: Pretendard Variable (CDN)
 - **배포**: Cloudflare Pages (`retirement-roadmap.pages.dev`)
 - **빌드**: `npm run build` -> `dist/` 폴더 생성
 - **난독화**: `vite-plugin-obfuscator` 적용 (프로덕션 빌드 시)
@@ -63,7 +64,7 @@ e-book/
 | 1 | `retirement-calc` | 은퇴 시뮬레이션 | `CashFlow` (은퇴계산기.tsx) | Calculator |
 | 2 | `ebook2` | 실전 전략 가이드 | `EBook2` | Compass |
 | 3 | `ebook3` | 사례로 배우기 | `EBook3` | Users |
-| 4 | `author` | MAKER: 지독한 J의 기록 | `AuthorNote` | Pen |
+| 4 | `author` | J의 기록 | `AuthorNote` | Pen |
 
 - 초기 페이지: `retirement-calc` (은퇴 시뮬레이션)
 - 제거된 메뉴: 은퇴 가이드북(EBook.tsx), 현금흐름표(CashFlowTable.tsx) - 파일은 존재하나 라우팅에서 제외
@@ -102,14 +103,15 @@ e-book/
 | 기본설정 | startYear, retirementStartAge, simulationEndAge | 시작년도, 은퇴나이, 종료나이 |
 | 생활비 | monthlyLivingCostBefore75, monthlyLivingCostAfter75, inflationRate | 75세 전후 월 생활비, 물가상승률 |
 | 국민연금 | nationalPensionStartAge, nationalPensionYearly | 수령 시작 나이, 연 수령액 |
-| 퇴직연금 | retirementPensionType, retirementPensionBalance, retirementPensionReturnRate | 유형(IRP/DB/DC), 잔액, 수익률 |
-| 개인연금 | totalPension, pensionWithdrawalAmount, pensionReturnRate, pensionStartAge, usePensionDepletion | 잔액, 인출액, 수익률, 개시나이, 소진모드 |
+| 퇴직연금 | retirementPensions[] | 복수 계좌 (DB/DC/IRP), 각각 잔액·수익률. DB형은 수익률 0 고정. 가중평균 수익률 자동 계산 |
+| 개인연금 | personalPensions[] | 복수 계좌 (연금저축/연금보험), 각각 잔액·수익률. 가중평균 수익률 자동 계산 |
+| 개인연금 옵션 | pensionWithdrawalAmount, pensionStartAge, usePensionDepletion | 인출액 한도, 개시나이, 소진모드 |
 | ISA | husbandISA, wifeISA, isaReturnRate | 부부 ISA 잔액, 수익률 |
 | 해외주식 | overseasInvestmentAmount, overseasReturnRate | 잔액, 수익률 |
 | 예적금 | savingsAmount, savingsReturnRate | 잔액, 수익률 |
 | 생명보험 | lifeInsurancePensionStartAge, lifeInsurancePensionYearly | 개시나이, 연수령액 |
 | 주택연금 | homeValue, homePensionStartAge, homePensionMonthly | 주택가치, 개시나이, 월수령액 |
-| 추가자산 | additionalAssets[] | 동적 자산 목록 (ISA/해외/예적금/생명보험/부동산/기타) |
+| 추가자산 | additionalAssets[] | 동적 자산 목록 (ISA/해외/예적금/생명보험/부동산/기타). ISA 1인 한도 1억원 캡 적용 |
 | 부채 | totalDebt, monthlyDebtRepayment, debtEndAge | 총액, 월상환, 완료나이 |
 | 비정기지출 | irregularExpenses[] | 이벤트명, 나이, 금액 |
 | 옵션 | returnRateType (pretax/posttax), pensionExcessTaxRate | 수익률 기준, 초과세율 |
@@ -117,50 +119,77 @@ e-book/
 ### additionalAssets 동기화
 UI에서 additionalAssets 배열로 관리하되, 계산 로직은 기존 호환 필드 사용.
 updateAsset 함수에서 자산 타입별로 기존 필드에 자동 동기화:
-- ISA -> husbandISA, isaReturnRate
+- ISA -> husbandISA, isaReturnRate (1인 한도 1억원 캡 자동 적용)
 - overseas -> overseasInvestmentAmount, overseasReturnRate
 - savings -> savingsAmount, savingsReturnRate
 - life_insurance -> lifeInsurancePensionStartAge, lifeInsurancePensionYearly
 - real_estate -> homeValue, homePensionStartAge, homePensionMonthly
 - custom -> 동기화 없음 (계산 미반영)
 
+### 입력 모드 (은퇴 시점 / 적립식)
+개인연금과 추가자산(ISA, 해외직투, 예적금)은 2가지 입력 모드 지원:
+
+**은퇴 시점 모드** (기본): 은퇴 시점의 예상 잔액을 직접 입력
+
+**적립식 모드**: 현재 잔액 + 연 납입액 + 수익률로 은퇴 시점 잔액을 자동 계산
+- 복리 공식: `최종잔액 = 현재잔액 × (1+r)^n + 연납입액 × ((1+r)^n - 1) / r`
+  - r: 수익률, n: 은퇴까지 년수 (retirementStartAge - currentAge)
+- 수익률 0%일 때: `최종잔액 = 현재잔액 + 연납입액 × n`
+- n ≤ 0일 때: 현재 잔액 그대로 사용
+- ISA 적립식: 계산 결과가 1억 초과해도 캡 적용되지 않음 (입력 시점에만 캡 적용)
+- 적립식 계산 결과는 UI에 "XX세 예상 잔액" 표시
+- 시뮬레이션 실행 시 적립식 결과가 기존 호환 필드에 자동 반영
+
 ### 시뮬레이션 계산 흐름 (매년 반복)
 상세 계산식은 `guides/10-계산식-구조.md` 참조.
 
 ```
+0. 초기 잔액 설정
+   - 적립식 모드: 복리 공식으로 은퇴 시점 잔액 계산
+   - 복수 퇴직연금: 잔액 합산 + 가중평균 수익률 (DB형은 수익률 0)
+   - 복수 개인연금: 잔액 합산 + 가중평균 수익률
+   - 부채: 은퇴나이 > 상환종료나이이면 0
+
 1. 생활비 계산 (75세 기준 분리, 물가상승률 복리)
 2. 고정 수입 (국민연금, 주택연금, 생명보험연금)
+   - 국민연금: 조기(-6%/년, 최대-30%) / 연기(+7.2%/년, 최대+36%)
+   - 국민연금 세후: 나이별 세율 적용 + 물가상승률 반영
 3. 변동 수입 - 일반모드: 필요한 만큼만 인출 / 소진모드: PMT 균등 인출
    - 해외배당 (잔액 x 6% x 0.846)
-   - 개인연금 (나이별 세율 + 분리과세 1,500만 한도)
+   - 개인연금 (나이별 세율 + 분리과세 1,500만 한도, 초과분은 초과세율 적용)
    - ISA (부족분만 / PMT)
-   - 해외주식 매도 (부족분만 / PMT)
-4. 건보료 (개인연금 기반 소득점수 + 재산점수) x 218.8원 x 12
+   - 해외주식 매도 (부족분만 / PMT, 배당 제외 성장분만 소진)
+3-1. 건보료 예측 (개인연금 예상 인출액 기반 사전 계산)
+4. 건보료 재계산 (실제 개인연금 인출액 기반 소득점수 + 재산점수) x 218.8원 x 12
 5. 부채 상환 + 비정기 지출
-6. 총계 = 총소득 - 총지출 - 추가차감(국민연금 수령 시 연 500만 안전마진)
-7. 부족분 보전: 예적금 -> ISA -> 해외주식 순
+6. 총계 = 총소득 - 총지출 - 추가차감(국민연금 수령 && 생활비 > 0일 때 연 500만 안전마진)
+7. 부족분 보전: 예적금 → ISA → 해외주식 순
 8. 잔액 수익률 적용 (연말): ISA(r), 해외(r-6%), 연금(r), 예적금(r)
 ```
 
 ### 주요 상수
 - 해외배당 원천징수: 15.4%
+- 해외배당률: 6% (고정, 잔액 성장 = 수익률 - 6%)
 - 연금소득세: 55세 미만 16.5%, 55~69세 5.5%, 70~79세 4.4%, 80세+ 3.3%
 - 분리과세 한도: 1,500만원 (2024년 개정)
-- 국민연금 조기 감액: 1년당 6% (최대 30%)
-- 국민연금 연기 증액: 1년당 7.2% (최대 36%)
+- 초과세율 기본값: 15% (사용자 변경 가능)
+- 국민연금 조기 감액: 1년당 6% (최대 5년, 30%)
+- 국민연금 연기 증액: 1년당 7.2% (최대 5년, 36%)
+- ISA 1인 한도: 1억원
 - 재산 기본공제: 1억원 (일괄)
 - 건보 점수당 단가: 218.8원
-- 추가 차감: 국민연금 수령 시작 후 연 500만원 (안전 마진)
+- 건보 소득점수 공식: 연금세후소득 × 0.002 / 1000
+- 추가 차감: 국민연금 수령 시작 후 연 500만원 (안전 마진, 생활비 > 0 조건)
 
 ### 예시 프리셋 (6개)
 | 프리셋 | 자산규모 | 특징 |
 |--------|---------|------|
-| 30대 싱글 | 1.5억 | 높은 수익률, 부채 있음, 주택 없음 |
-| 40대 싱글 | 3억 | DC형, 70세부터 주택연금 |
-| 50대 싱글 | 5억 | 원금유지, 생명보험연금 추가 |
-| 50대 고자산 | 10억 | 부부 ISA 2억, 85세 종료 |
-| 40대 직장인 | 5억 | 대출 1억, 자녀 결혼비 |
-| 60대 은퇴자 | 연금중심 | 63세 조기수령, 보수적 수익률 |
+| 35세 싱글 | 2.5억 | DC형, 부채 5천만, 55세 은퇴 |
+| 42세 싱글 | 3억 | DC형, 70세부터 주택연금 |
+| 52세 싱글 | 5억 | 원금유지, 생명보험연금 추가 |
+| 45세 맞벌이 | 5억 | 대출 1억, 자녀 결혼비 |
+| 53세 고자산 | 10억 | 부부 ISA, 85세 종료 |
+| 62세 은퇴자 | 연금중심 | 63세 조기수령, 보수적 수익률 |
 
 ### 결과 테이블 동적 컬럼
 입력값이 0인 항목은 테이블에서 자동 숨김:
@@ -216,7 +245,7 @@ updateAsset 함수에서 자산 타입별로 기존 필드에 자동 동기화:
 ### 사례로 배우기 (EBook3.tsx)
 실전 시나리오 기반 학습 콘텐츠
 
-### MAKER: 지독한 J의 기록 (AuthorNote.tsx)
+### J의 기록 (AuthorNote.tsx)
 저자 스토리 4섹션 + 시뮬레이션 바로가기 CTA 버튼
 
 ---

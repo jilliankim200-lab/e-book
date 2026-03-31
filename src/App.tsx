@@ -25,15 +25,18 @@ import {
 import { isAdmin } from "./PasswordGate";
 import { useAutoDemo, DemoOverlay } from "./AutoDemo";
 import { FaqChatbot } from "./FaqChatbot";
+import { SimpleCalc } from "./SimpleCalc";
+import { Zap } from "lucide-react";
 
-type Page = "welcome" | "retirement-calc" | "sim-guide" | "ebook2" | "ebook3" | "author";
+type Page = "welcome" | "retirement-calc" | "simple-calc" | "sim-guide" | "ebook2" | "ebook3" | "author";
 
 const MENU_ITEMS = [
+  { id: "simple-calc" as Page, label: "간편 계산", icon: Zap },
   { id: "retirement-calc" as Page, label: "탈출지도", icon: Calculator },
   { id: "sim-guide" as Page, label: "탈출지도 사용법", icon: BookOpen },
   { id: "ebook2" as Page, label: "실전 전략 가이드", icon: Compass },
   { id: "ebook3" as Page, label: "사례로 배우기", icon: Users },
-  { id: "author" as Page, label: "MAKER: 지독한 J의 기록", icon: Pen },
+  { id: "author" as Page, label: "J의 기록", icon: Pen },
 ];
 
 const TC_LIST: { id: string; title: string; desc: string; expect: 'pass' | 'fail' | 'maybe'; data: Record<string, any> }[] = [
@@ -190,6 +193,8 @@ export default function App() {
             <CashFlow onSimulationComplete={handleSimulationComplete} pendingStrategyChanges={pendingStrategyChanges} autoRecalculate={autoRecalculate} onStrategyApplied={() => { setPendingStrategyChanges(null); setAutoRecalculate(false); }} onInputDirty={() => { setShowActionPanel(false); setSimResults([]); }} triggerRecalc={triggerRecalc} initialTcData={tcData} />
           </div>
         );
+      case "simple-calc":
+        return <div style={{ height: "100%", overflowY: "auto" }} onScroll={(e) => setIsScrolled((e.target as HTMLElement).scrollTop > 0)}><SimpleCalc onNavigate={(page) => setCurrentPage(page as Page)} /></div>;
       case "sim-guide":
         return <div style={{ height: "100%", overflowY: "auto" }} onScroll={(e) => setIsScrolled((e.target as HTMLElement).scrollTop > 0)}><SimGuide onNavigate={(page) => setCurrentPage(page as Page)} /></div>;
       case "ebook2":
@@ -423,6 +428,7 @@ export default function App() {
 
         {/* Header */}
         <header
+          className={showActionPanel && simResults.length > 0 ? "header-panel-open" : ""}
           style={{
             height: 56,
             display: "flex",

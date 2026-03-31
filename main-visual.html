@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 652px;
+    height: 488px;
+    overflow: hidden;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .container {
+    width: 652px;
+    height: 488px;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* 배경 그리드 패턴 */
+  .grid-bg {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image:
+      linear-gradient(rgba(56, 189, 248, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(56, 189, 248, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* 글로우 효과 */
+  .glow-1 {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+    top: -50px;
+    right: -50px;
+    border-radius: 50%;
+  }
+
+  .glow-2 {
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+    bottom: -30px;
+    left: -30px;
+    border-radius: 50%;
+  }
+
+  /* 차트 라인 장식 */
+  .chart-line {
+    position: absolute;
+    bottom: 60px;
+    left: 40px;
+    right: 40px;
+    height: 120px;
+  }
+
+  .chart-line svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* 상단 뱃지 */
+  .badge {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 18px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 24px;
+  }
+
+  /* 메인 타이틀 */
+  .title-area {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .title-sub {
+    color: #94a3b8;
+    font-size: 16px;
+    font-weight: 400;
+    margin-bottom: 12px;
+    letter-spacing: 2px;
+  }
+
+  .title-main {
+    font-size: 58px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffffff 0%, #38bdf8 50%, #10b981 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+    margin-bottom: 8px;
+    letter-spacing: -2px;
+  }
+
+  .title-eng {
+    color: rgba(148, 163, 184, 0.5);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  /* 키워드 태그 */
+  .tags {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 32px;
+  }
+
+  .tag {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #cbd5e1;
+    font-size: 13px;
+    font-weight: 400;
+    padding: 6px 14px;
+    border-radius: 6px;
+  }
+
+  .tag .accent {
+    color: #10b981;
+    font-weight: 700;
+  }
+
+  /* 하단 문구 */
+  .bottom-text {
+    color: #64748b;
+    font-size: 14px;
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .bottom-text strong {
+    color: #94a3b8;
+  }
+
+  /* 장식 요소 - 숫자들 */
+  .deco-num {
+    position: absolute;
+    font-family: 'Noto Sans KR', monospace;
+    font-weight: 900;
+    color: rgba(56, 189, 248, 0.06);
+    z-index: 1;
+  }
+
+  .deco-1 { font-size: 80px; top: 20px; left: 30px; }
+  .deco-2 { font-size: 60px; bottom: 40px; right: 40px; }
+  .deco-3 { font-size: 50px; top: 60px; right: 80px; }
+
+  /* 상하 라인 장식 */
+  .line-top, .line-bottom {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.4), transparent);
+  }
+  .line-top { top: 20px; }
+  .line-bottom { bottom: 20px; }
+
+  /* 모서리 장식 */
+  .corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: rgba(56, 189, 248, 0.2);
+    border-style: solid;
+  }
+  .corner-tl { top: 16px; left: 16px; border-width: 2px 0 0 2px; }
+  .corner-tr { top: 16px; right: 16px; border-width: 2px 2px 0 0; }
+  .corner-bl { bottom: 16px; left: 16px; border-width: 0 0 2px 2px; }
+  .corner-br { bottom: 16px; right: 16px; border-width: 0 2px 2px 0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- 배경 요소 -->
+  <div class="grid-bg"></div>
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+
+  <!-- 장식 숫자 -->
+  <div class="deco-num deco-1">90</div>
+  <div class="deco-num deco-2">57</div>
+  <div class="deco-num deco-3">3층</div>
+
+  <!-- 모서리 -->
+  <div class="corner corner-tl"></div>
+  <div class="corner corner-tr"></div>
+  <div class="corner corner-bl"></div>
+  <div class="corner corner-br"></div>
+
+  <!-- 상하 라인 -->
+  <div class="line-top"></div>
+  <div class="line-bottom"></div>
+
+  <!-- 뱃지 -->
+  <div class="badge">은퇴 시뮬레이션 프로그램</div>
+
+  <!-- 타이틀 -->
+  <div class="title-area">
+    <div class="title-sub">내 자산은 몇 세까지 버틸 수 있을까?</div>
+    <div class="title-main">탈출지도</div>
+    <div class="title-eng">Escape Route Planner</div>
+  </div>
+
+  <!-- 키워드 태그 -->
+  <div class="tags">
+    <div class="tag"><span class="accent">3층</span> 연금 구조</div>
+    <div class="tag">세금 · 건보료 반영</div>
+    <div class="tag">연도별 현금흐름</div>
+    <div class="tag"><span class="accent">4가지</span> 전략 제시</div>
+  </div>
+
+  <!-- 하단 -->
+  <div class="bottom-text">
+    막연한 불안 대신, <strong>숫자로 확신</strong>을 드립니다
+  </div>
+</div>
+</body>
+</html>

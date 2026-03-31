@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 652px; height: 488px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; }
+
+  .container {
+    width: 652px; height: 488px;
+    background: #0a0a0a;
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+
+  /* 중앙 방사형 효과 */
+  .radial {
+    position: absolute;
+    width: 600px; height: 600px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 60%);
+    border-radius: 50%;
+  }
+
+  /* 세로 라인 3개 */
+  .v-line {
+    position: absolute; top: 0; bottom: 0; width: 1px;
+    background: linear-gradient(180deg, transparent 10%, rgba(255,255,255,0.04) 50%, transparent 90%);
+  }
+  .vl1 { left: 33%; }
+  .vl2 { left: 50%; }
+  .vl3 { left: 67%; }
+
+  /* 타이틀 영역 */
+  .title-block {
+    text-align: center;
+    position: relative; z-index: 2;
+    margin-bottom: 44px;
+  }
+
+  .pre-title {
+    font-size: 14px; color: #10b981; font-weight: 700;
+    letter-spacing: 6px; margin-bottom: 16px;
+    text-transform: uppercase;
+  }
+
+  .main-title {
+    font-size: 60px; font-weight: 900; color: #fff;
+    letter-spacing: -3px; line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  .main-title .green { color: #10b981; }
+
+  .post-title {
+    font-size: 14px; color: #4a5568; letter-spacing: 5px;
+  }
+
+  /* 3 컬럼 카드 */
+  .cards {
+    display: flex; gap: 2px;
+    position: relative; z-index: 2;
+    margin-bottom: 40px;
+  }
+
+  .card {
+    width: 196px; padding: 24px 20px;
+    text-align: center;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .card:first-child { border-radius: 10px 0 0 10px; }
+  .card:last-child { border-radius: 0 10px 10px 0; }
+
+  .card-step {
+    font-size: 11px; font-weight: 700; letter-spacing: 3px;
+    margin-bottom: 10px;
+  }
+  .card:nth-child(1) .card-step { color: #38bdf8; }
+  .card:nth-child(2) .card-step { color: #fbbf24; }
+  .card:nth-child(3) .card-step { color: #10b981; }
+
+  .card-title {
+    font-size: 20px; font-weight: 900; color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .card-desc {
+    font-size: 12px; color: #64748b; line-height: 1.6;
+  }
+
+  /* 구분선 */
+  .card-divider {
+    display: flex; align-items: center;
+    color: rgba(255,255,255,0.1); font-size: 16px;
+    margin: 0 -1px;
+  }
+
+  /* 하단 */
+  .bottom {
+    position: relative; z-index: 2;
+    text-align: center;
+  }
+  .bottom-main {
+    font-size: 16px; color: #94a3b8; font-weight: 400;
+  }
+  .bottom-main strong {
+    color: #ffffff; font-weight: 900;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="radial"></div>
+  <div class="v-line vl1"></div>
+  <div class="v-line vl2"></div>
+  <div class="v-line vl3"></div>
+
+  <div class="title-block">
+    <div class="pre-title">은퇴 시뮬레이션</div>
+    <div class="main-title">탈출<span class="green">지도</span></div>
+    <div class="post-title">ESCAPE ROUTE PLANNER</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-step">STEP 01</div>
+      <div class="card-title">숫자를 넣고</div>
+      <div class="card-desc">연금 · 자산 · 생활비<br>나의 현실을 입력하세요</div>
+    </div>
+    <div class="card-divider">&#9656;</div>
+    <div class="card">
+      <div class="card-step">STEP 02</div>
+      <div class="card-title">현실을 보고</div>
+      <div class="card-desc">자산 수명 · 적자 시점<br>연도별 흐름을 확인하세요</div>
+    </div>
+    <div class="card-divider">&#9656;</div>
+    <div class="card">
+      <div class="card-step">STEP 03</div>
+      <div class="card-title">계획을 세워라</div>
+      <div class="card-desc">4가지 전략 · 즉시 반영<br>나만의 로드맵 완성</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="bottom-main">막연한 불안 대신, <strong>숫자로 확신</strong>을</div>
+  </div>
+</div>
+</body>
+</html>

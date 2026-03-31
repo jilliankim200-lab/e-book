@@ -44,7 +44,7 @@ const MdTable = ({ headers, rows }: { headers: string[]; rows: string[][] }) => 
 
 const InfoBox = ({ children, color = "blue" }: { children: React.ReactNode; color?: "blue" | "amber" | "green" | "red" }) => {
   return (
-    <div style={{ margin: "12px 0", padding: "14px 16px", borderRadius: 10, background: "hsl(169.44deg 100% 50% / 10%)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1.7 }}>
+    <div className="info-box" style={{ margin: "12px 0", padding: "14px 16px", borderRadius: 10, background: "hsl(169.44deg 100% 50% / 10%)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1.7 }}>
       {children}
     </div>
   );

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard Variable', Pretendard, sans-serif; background: #f1f5f9; color: #1e293b; }
+
+  .page {
+    width: 800px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  /* 헤더 */
+  .header {
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    padding: 48px 56px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute; top: -80px; right: -80px;
+    width: 240px; height: 240px;
+    background: rgba(49,130,246,0.08);
+    border-radius: 50%;
+  }
+  .header-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #3182F6, #6366f1);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.6;
+  }
+
+  .content { padding: 48px 56px; }
+
+  .section { margin-bottom: 44px; }
+  .section:last-child { margin-bottom: 0; }
+
+  .section-label {
+    font-size: 12px;
+    color: #3182F6;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 24px;
+  }
+
+  /* 고객 정보 */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .info-item {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .info-item .label {
+    font-size: 13px;
+    color: #94a3b8;
+    width: 80px;
+    flex-shrink: 0;
+  }
+  .info-item .value {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    flex: 1;
+    border-bottom: 1px dashed #cbd5e1;
+    padding-bottom: 2px;
+    min-height: 22px;
+  }
+
+  /* 입력값 요약 테이블 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: #f1f5f9;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: #475569;
+    font-size: 13px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  .text-right { text-align: right; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-green { background: #ecfdf5; color: #059669; }
+  .tag-red { background: #fef2f2; color: #dc2626; }
+  .tag-blue { background: #eff6ff; color: #3182F6; }
+
+  /* 진단 결과 카드 */
+  .result-card {
+    border-radius: 14px;
+    padding: 32px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .result-pass { background: #ecfdf5; border: 1px solid #a7f3d0; }
+  .result-fail { background: #fef2f2; border: 1px solid #fecaca; }
+
+  .result-icon {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .result-pass .result-icon { background: #d1fae5; }
+  .result-fail .result-icon { background: #fee2e2; }
+
+  .result-title {
+    font-size: 22px;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .result-pass .result-title { color: #059669; }
+  .result-fail .result-title { color: #dc2626; }
+
+  .result-desc {
+    font-size: 15px;
+    color: #64748b;
+    line-height: 1.6;
+  }
+
+  /* 전략 카드 */
+  .strategy-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .strategy-card {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+  }
+  .strategy-num {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    font-weight: 900;
+    color: #64748b;
+  }
+  .strategy-card h4 {
+    font-size: 16px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .strategy-card .effect {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .strategy-card .impact {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .impact-high { background: #ecfdf5; color: #059669; }
+  .impact-mid { background: #eff6ff; color: #3182F6; }
+
+  /* J의 코멘트 */
+  .comment-box {
+    background: #f8fafc;
+    border-left: 4px solid #3182F6;
+    border-radius: 0 12px 12px 0;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .comment-box h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #3182F6;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .comment-box p {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.8;
+  }
+
+  /* 액션 플랜 */
+  .action-list {
+    list-style: none;
+  }
+  .action-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .action-item:last-child { border-bottom: none; }
+
+  .action-step {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-now { background: #dc2626; color: #fff; }
+  .step-3m { background: #d97706; color: #fff; }
+  .step-6m { background: #3182F6; color: #fff; }
+  .step-1y { background: #059669; color: #fff; }
+
+  .action-content h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+  .action-content p {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.6;
+  }
+
+  /* 면책 */
+  .disclaimer {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 32px;
+  }
+  .disclaimer h4 {
+    font-size: 13px; font-weight: 700; color: #94a3b8; margin-bottom: 8px;
+  }
+  .disclaimer p {
+    font-size: 12px; color: #94a3b8; line-height: 1.7;
+  }
+
+  /* 푸터 */
+  .footer {
+    background: #0f172a;
+    padding: 24px 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #64748b;
+  }
+  .footer strong { color: #3182F6; }
+
+  .edit-hint {
+    background: #fffbeb;
+    border: 1px dashed #fbbf24;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #92400e;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 8px 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <div class="header-badge">PREMIUM ONLY</div>
+    <h1>1:1 맞춤 은퇴 시나리오 진단서</h1>
+    <p>고객님의 시뮬레이션 결과를 분석하고, 맞춤 전략을 설계합니다.</p>
+  </div>
+
+  <div class="content">
+
+    <div class="edit-hint">
+      <span class="material-icons-outlined" style="font-size:18px;">edit</span>
+      고객 상담 후 각 항목을 채워 제공하세요. 이 안내는 삭제하시면 됩니다.
+    </div>
+
+    <!-- 1. 고객 기본 정보 -->
+    <div class="section">
+      <div class="section-label">CLIENT INFO</div>
+      <div class="section-title">고객 기본 정보</div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="label">닉네임</div>
+          <div class="value"></div>
+        </div>
+        <div class="info-item">
+          <div class="label">상담 일시</div>
+          <div class="value">2026년 월 일</div>
+        </div>
+        <div class="info-item">
+          <div class="label">현재 나이</div>
+          <div class="value">세</div>
+        </div>
+        <div class="info-item">
+          <div class="label">희망 은퇴 나이</div>
+          <div class="value">세</div>
+        </div>
+        <div class="info-item">
+          <div class="label">목표 시뮬 종료</div>
+          <div class="value">세</div>
+        </div>
+        <div class="info-item">
+          <div class="label">월 생활비</div>
+          <div class="value">만원</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 시뮬레이션 입력값 요약 -->
+    <div class="section">
+      <div class="section-label">INPUT SUMMARY</div>
+      <div class="section-title">시뮬레이션 입력값 요약</div>
+
+      <table>
+        <thead>
+          <tr><th>항목</th><th>구분</th><th class="text-right">금액/수치</th><th>비고</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>국민연금</td><td>1층</td><td class="text-right">연 만원</td><td>수령 시작: 세</td></tr>
+          <tr><td>퇴직연금</td><td>2층</td><td class="text-right">만원</td><td>유형: DB / DC / IRP</td></tr>
+          <tr><td>개인연금</td><td>3층</td><td class="text-right">만원</td><td>연금저축 / 연금보험</td></tr>
+          <tr><td>ISA</td><td>자산</td><td class="text-right">만원</td><td>수익률: %</td></tr>
+          <tr><td>해외직투</td><td>자산</td><td class="text-right">만원</td><td>수익률: %</td></tr>
+          <tr><td>예적금</td><td>자산</td><td class="text-right">만원</td><td>수익률: %</td></tr>
+          <tr><td>부채</td><td>지출</td><td class="text-right">만원</td><td>월 상환: 만원 / 세까지</td></tr>
+          <tr><td>물가상승률</td><td>설정</td><td class="text-right">%</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 3. 진단 결과 -->
+    <div class="section">
+      <div class="section-label">DIAGNOSIS</div>
+      <div class="section-title">시뮬레이션 진단 결과</div>
+
+      <!-- 성공 시 -->
+      <div class="result-card result-pass" style="display:none;">
+        <div class="result-icon">
+          <span class="material-icons-outlined" style="font-size:28px; color:#059669;">check_circle</span>
+        </div>
+        <div class="result-title">안정 — FIRE 성공</div>
+        <div class="result-desc">현재 계획대로 진행하면 00세까지 자산이 유지됩니다.</div>
+      </div>
+
+      <!-- 실패 시 -->
+      <div class="result-card result-fail">
+        <div class="result-icon">
+          <span class="material-icons-outlined" style="font-size:28px; color:#dc2626;">warning</span>
+        </div>
+        <div class="result-title">위험 — 00세에 자산 고갈</div>
+        <div class="result-desc">현재 계획 기준, 00세에 자산이 바닥나며 누적 적자 약 0,000만원이 발생합니다.</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr><th>핵심 지표</th><th class="text-right">수치</th><th>판정</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>자산 고갈 시점</td><td class="text-right">세</td><td><span class="tag tag-red">위험</span></td></tr>
+          <tr><td>누적 적자</td><td class="text-right">만원</td><td><span class="tag tag-red">위험</span></td></tr>
+          <tr><td>최초 적자 발생 연도</td><td class="text-right">세</td><td><span class="tag tag-red">위험</span></td></tr>
+          <tr><td>연금 수입 합계 (연)</td><td class="text-right">만원</td><td><span class="tag tag-blue">보통</span></td></tr>
+          <tr><td>월 생활비 대비 연금 커버율</td><td class="text-right">%</td><td><span class="tag tag-green">양호</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 4. 전략 제안 -->
+    <div class="section">
+      <div class="section-label">STRATEGY</div>
+      <div class="section-title">맞춤 전략 제안</div>
+
+      <div class="strategy-cards">
+        <div class="strategy-card">
+          <div class="strategy-num">1</div>
+          <h4>
+            <span class="material-icons-outlined" style="font-size:20px; color:#d97706;">schedule</span>
+            은퇴 시기 조정
+          </h4>
+          <div class="effect">(예: 은퇴를 3년 늦추면 적자 0,000만원 해소)</div>
+          <div class="impact impact-high">효과: 높음</div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">2</div>
+          <h4>
+            <span class="material-icons-outlined" style="font-size:20px; color:#059669;">savings</span>
+            생활비 절감
+          </h4>
+          <div class="effect">(예: 월 00만원 절감 시 00세까지 자산 유지)</div>
+          <div class="impact impact-high">효과: 높음</div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">3</div>
+          <h4>
+            <span class="material-icons-outlined" style="font-size:20px; color:#3182F6;">account_balance</span>
+            저축 확대
+          </h4>
+          <div class="effect">(예: 예적금 0,000만원 추가 시 적자 해소)</div>
+          <div class="impact impact-mid">효과: 보통</div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">4</div>
+          <h4>
+            <span class="material-icons-outlined" style="font-size:20px; color:#7c3aed;">trending_up</span>
+            수익률 개선
+          </h4>
+          <div class="effect">(예: 투자 수익률 0%p 상향 시 00세까지 유지)</div>
+          <div class="impact impact-mid">효과: 보통</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. J의 종합 코멘트 -->
+    <div class="section">
+      <div class="section-label">J's COMMENT</div>
+      <div class="section-title">J의 종합 소견</div>
+
+      <div class="comment-box">
+        <h4>
+          <span class="material-icons-outlined" style="font-size:18px;">chat</span>
+          상담 소견
+        </h4>
+        <p>
+          (고객 상황에 대한 종합적인 분석과 조언을 작성하세요.<br>
+          예: "현재 연금 구조는 탄탄하나, 은퇴 시기가 다소 이릅니다.
+          퇴직연금을 IRP로 전환하여 수익률을 높이고, 국민연금 수령을 67세로 연기하면
+          90세까지 안정적인 현금흐름을 확보할 수 있습니다.")
+        </p>
+      </div>
+
+      <div class="comment-box">
+        <h4>
+          <span class="material-icons-outlined" style="font-size:18px;">priority_high</span>
+          특별 주의사항
+        </h4>
+        <p>
+          (고객이 특별히 유의해야 할 점을 작성하세요.<br>
+          예: "59세에 자녀 결혼 비용 5,000만원 지출이 예정되어 있어, 해당 시점에 자산 급감이 발생합니다.
+          이를 대비해 별도 목적 자금을 마련하시는 것을 권장합니다.")
+        </p>
+      </div>
+    </div>
+
+    <!-- 6. 액션 플랜 -->
+    <div class="section">
+      <div class="section-label">ACTION PLAN</div>
+      <div class="section-title">실행 로드맵</div>
+
+      <ul class="action-list">
+        <li class="action-item">
+          <div class="action-step step-now">즉시</div>
+          <div class="action-content">
+            <h4>(즉시 실행 항목)</h4>
+            <p>(예: IRP 계좌 개설 후 퇴직연금 이전 검토)</p>
+          </div>
+        </li>
+        <li class="action-item">
+          <div class="action-step step-now">즉시</div>
+          <div class="action-content">
+            <h4>(즉시 실행 항목)</h4>
+            <p>(예: 연금저축 연 400만원 납입 시작)</p>
+          </div>
+        </li>
+        <li class="action-item">
+          <div class="action-step step-3m">3개월</div>
+          <div class="action-content">
+            <h4>(3개월 내 실행 항목)</h4>
+            <p>(예: ISA 만기 후 연금 전환 계획 수립)</p>
+          </div>
+        </li>
+        <li class="action-item">
+          <div class="action-step step-6m">6개월</div>
+          <div class="action-content">
+            <h4>(6개월 내 실행 항목)</h4>
+            <p>(예: 배당주 포트폴리오 구성 및 월 배당 흐름 확보)</p>
+          </div>
+        </li>
+        <li class="action-item">
+          <div class="action-step step-1y">1년</div>
+          <div class="action-content">
+            <h4>(1년 내 실행 항목)</h4>
+            <p>(예: 탈출지도 재시뮬레이션으로 계획 점검)</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 7. 다음 상담 -->
+    <div class="section">
+      <div class="section-label">FOLLOW-UP</div>
+      <div class="section-title">후속 안내</div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="label">다음 점검일</div>
+          <div class="value">2026년 월 (6개월 후)</div>
+        </div>
+        <div class="info-item">
+          <div class="label">점검 항목</div>
+          <div class="value">액션 플랜 이행 여부</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 면책 -->
+    <div class="disclaimer">
+      <h4>유의사항</h4>
+      <p>
+        본 진단서는 탈출지도 시뮬레이션 결과를 기반으로 한 개인 의견이며, 공인 재무설계사의 자문을 대체하지 않습니다.
+        투자 및 재무 의사결정에 따른 책임은 고객 본인에게 있습니다.
+        본 자료는 PREMIUM 구매 고객 전용이며, 무단 배포 및 공유를 금합니다.
+      </p>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <span>탈출 조력자 <strong>J</strong> | 1:1 맞춤 은퇴 진단</span>
+    <span>PREMIUM 전용</span>
+  </div>
+</div>
+
+</body>
+</html>

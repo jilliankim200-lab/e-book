@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 652px; height: 488px; overflow: hidden; font-family: 'Noto Sans KR', sans-serif; }
+
+  .container {
+    width: 652px; height: 488px;
+    background: linear-gradient(180deg, #0c1220 0%, #162032 100%);
+    position: relative; overflow: hidden;
+    padding: 40px;
+  }
+
+  /* 우측 차트 장식 */
+  .chart-deco {
+    position: absolute;
+    right: -20px; top: 50%;
+    transform: translateY(-50%);
+    opacity: 0.12;
+  }
+
+  /* 좌측 정렬 레이아웃 */
+  .content {
+    position: relative; z-index: 2;
+    height: 100%;
+    display: flex; flex-direction: column;
+    justify-content: center;
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .eyebrow-line {
+    width: 32px; height: 2px;
+    background: #10b981;
+  }
+
+  .eyebrow-text {
+    font-size: 13px; color: #10b981;
+    font-weight: 700; letter-spacing: 2px;
+  }
+
+  .main-title {
+    font-size: 52px; font-weight: 900;
+    color: #ffffff; line-height: 1.15;
+    letter-spacing: -2px;
+    margin-bottom: 28px;
+  }
+
+  .main-title .dim { color: #475569; }
+
+  /* 3단계 가로 */
+  .flow {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 36px;
+  }
+
+  .flow-item {
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .flow-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .fd1 { background: #38bdf8; box-shadow: 0 0 10px rgba(56,189,248,0.4); }
+  .fd2 { background: #fbbf24; box-shadow: 0 0 10px rgba(251,191,36,0.4); }
+  .fd3 { background: #10b981; box-shadow: 0 0 10px rgba(16,185,129,0.4); }
+
+  .flow-label {
+    font-size: 16px; font-weight: 700;
+  }
+  .fl1 { color: #38bdf8; }
+  .fl2 { color: #fbbf24; }
+  .fl3 { color: #10b981; }
+
+  .flow-arrow {
+    color: #334155; font-size: 14px;
+    margin: 0 16px;
+  }
+
+  /* 설명 텍스트 */
+  .desc {
+    font-size: 15px; color: #64748b; line-height: 1.7;
+    max-width: 440px;
+    margin-bottom: 32px;
+  }
+
+  .desc strong { color: #94a3b8; }
+
+  /* 하단 태그 */
+  .tags {
+    display: flex; gap: 8px;
+  }
+  .tag {
+    padding: 5px 14px;
+    border-radius: 4px;
+    font-size: 12px; color: #64748b;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  /* 우측 큰 숫자 장식 */
+  .big-num {
+    position: absolute;
+    right: 40px; top: 50%;
+    transform: translateY(-50%);
+    font-size: 180px; font-weight: 900;
+    color: rgba(255,255,255,0.02);
+    line-height: 1;
+    letter-spacing: -10px;
+  }
+
+  /* 우측 상단 뱃지 */
+  .corner-badge {
+    position: absolute;
+    top: 30px; right: 30px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+    color: #10b981;
+    font-size: 12px; font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 6px;
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="big-num">J</div>
+  <div class="corner-badge">POWER J's Tool</div>
+
+  <div class="content">
+    <div class="eyebrow">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">은퇴 시뮬레이션</div>
+    </div>
+
+    <div class="main-title">
+      탈출지도<br>
+      <span class="dim">본인의 숫자를 넣고</span><br>
+      <span class="dim">현실을 보고</span><br>
+      <span class="dim">계획을 세워라.</span>
+    </div>
+
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-dot fd1"></div>
+        <div class="flow-label fl1">입력</div>
+      </div>
+      <div class="flow-arrow">&#10132;</div>
+      <div class="flow-item">
+        <div class="flow-dot fd2"></div>
+        <div class="flow-label fl2">진단</div>
+      </div>
+      <div class="flow-arrow">&#10132;</div>
+      <div class="flow-item">
+        <div class="flow-dot fd3"></div>
+        <div class="flow-label fl3">전략</div>
+      </div>
+    </div>
+
+    <div class="tags">
+      <div class="tag">3층 연금 구조</div>
+      <div class="tag">세금 · 건보료</div>
+      <div class="tag">연도별 현금흐름</div>
+      <div class="tag">4가지 전략</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

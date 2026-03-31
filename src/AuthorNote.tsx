@@ -89,7 +89,7 @@ export function AuthorNote({ onNavigate }: AuthorNoteProps) {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
           <Pen size={20} strokeWidth={2} color="var(--accent-blue)" />
           <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: "var(--font-bold)", color: "var(--text-primary)", margin: 0 }}>
-            MAKER: 지독한 J의 기록
+            J의 기록
           </h1>
         </div>
       </div>

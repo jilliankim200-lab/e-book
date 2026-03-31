@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard Variable', Pretendard, sans-serif; background: #f1f5f9; color: #1e293b; }
+
+  .page {
+    width: 640px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  /* 헤더 */
+  .header {
+    background: linear-gradient(135deg, #3182F6, #277fd1);
+    padding: 40px 48px;
+    color: #fff;
+    text-align: center;
+  }
+  .header-icon {
+    width: 56px; height: 56px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .content {
+    padding: 40px 48px;
+  }
+
+  /* 인사 */
+  .greeting {
+    font-size: 15px;
+    color: #475569;
+    line-height: 1.8;
+    margin-bottom: 32px;
+  }
+  .greeting strong { color: #0f172a; }
+
+  /* 업데이트 내역 */
+  .update-section {
+    margin-bottom: 32px;
+  }
+  .update-label {
+    font-size: 12px;
+    color: #3182F6;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .update-title {
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 20px;
+  }
+
+  .update-list {
+    list-style: none;
+  }
+  .update-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .update-item:last-child { border-bottom: none; }
+
+  .update-type {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .type-new { background: #ecfdf5; color: #059669; }
+  .type-improve { background: #eff6ff; color: #3182F6; }
+  .type-fix { background: #fef3c7; color: #d97706; }
+
+  .update-content h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+  .update-content p {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.6;
+  }
+
+  /* 다음 예정 */
+  .next-section {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 32px;
+  }
+  .next-section h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .next-list {
+    list-style: none;
+  }
+  .next-list li {
+    font-size: 14px;
+    color: #64748b;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .next-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    flex-shrink: 0;
+  }
+
+  /* 안내 */
+  .info-box {
+    background: #eff6ff;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .info-box p {
+    font-size: 14px;
+    color: #334155;
+    line-height: 1.6;
+  }
+
+  /* 서명 */
+  .signature {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 24px;
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.8;
+  }
+  .signature strong {
+    color: #3182F6;
+    font-weight: 700;
+  }
+
+  /* 푸터 */
+  .footer {
+    background: #f8fafc;
+    padding: 20px 48px;
+    text-align: center;
+    font-size: 12px;
+    color: #94a3b8;
+  }
+
+  /* 편집 안내 */
+  .edit-hint {
+    background: #fffbeb;
+    border: 1px dashed #fbbf24;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #92400e;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <div class="header-icon">
+      <span class="material-icons-outlined" style="font-size:28px; color:#fff;">rocket_launch</span>
+    </div>
+    <h1>탈출지도 업데이트 안내</h1>
+    <p>DELUXE 고객 우선 안내 | 2026년 0월 0일</p>
+  </div>
+
+  <div class="content">
+
+    <!-- 편집 안내 -->
+    <div class="edit-hint">
+      <span class="material-icons-outlined" style="font-size:18px;">edit</span>
+      업데이트 시 날짜, 내용, 다음 예정 항목을 수정 후 발송하세요. 이 안내는 삭제하시면 됩니다.
+    </div>
+
+    <!-- 인사 -->
+    <div class="greeting">
+      안녕하세요, <strong>탈출 조력자 J</strong>입니다.<br>
+      탈출지도가 업데이트되었습니다. DELUXE 고객님께 가장 먼저 안내드립니다.
+    </div>
+
+    <!-- 업데이트 내역 -->
+    <div class="update-section">
+      <div class="update-label">WHAT'S NEW</div>
+      <div class="update-title">이번 업데이트 내역</div>
+
+      <ul class="update-list">
+        <li class="update-item">
+          <span class="update-type type-new">NEW</span>
+          <div class="update-content">
+            <h4>(새 기능 제목)</h4>
+            <p>(기능 설명을 입력하세요)</p>
+          </div>
+        </li>
+        <li class="update-item">
+          <span class="update-type type-improve">개선</span>
+          <div class="update-content">
+            <h4>(개선 사항 제목)</h4>
+            <p>(개선 내용을 입력하세요)</p>
+          </div>
+        </li>
+        <li class="update-item">
+          <span class="update-type type-fix">수정</span>
+          <div class="update-content">
+            <h4>(수정 사항 제목)</h4>
+            <p>(수정 내용을 입력하세요)</p>
+          </div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- 다음 예정 -->
+    <div class="next-section">
+      <h3>
+        <span class="material-icons-outlined" style="font-size:18px; color:#94a3b8;">event</span>
+        다음 업데이트 예정
+      </h3>
+      <ul class="next-list">
+        <li><div class="next-dot"></div>(예정 기능 1)</li>
+        <li><div class="next-dot"></div>(예정 기능 2)</li>
+        <li><div class="next-dot"></div>(예정 기능 3)</li>
+      </ul>
+    </div>
+
+    <!-- 접속 안내 -->
+    <div class="info-box">
+      <span class="material-icons-outlined" style="font-size:20px; color:#3182F6; flex-shrink:0; margin-top:2px;">info</span>
+      <p>
+        기존 URL과 비밀번호로 접속하시면 업데이트된 버전이 자동 적용됩니다.
+        별도 설치나 다운로드는 필요 없습니다.
+      </p>
+    </div>
+
+    <!-- 서명 -->
+    <div class="signature">
+      감사합니다.<br>
+      탈출 조력자 <strong>J</strong> 드림<br>
+      <span style="font-size:12px; color:#94a3b8;">문의: (연락처 입력)</span>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    본 안내는 DELUXE / PREMIUM 구매 고객에게만 발송됩니다.
+  </div>
+</div>
+
+</body>
+</html>

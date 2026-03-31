@@ -220,6 +220,12 @@ export function DemoOverlay({ demoState, onStop, speed, onSpeedChange }: { demoS
   const [displayMsg, setDisplayMsg] = useState("");
   const [displayPos, setDisplayPos] = useState<"top" | "bottom" | "center" | "right">("center");
   const prevMsgRef = useRef("");
+  const lastSpotlightRef = useRef<SpotlightRect | null>(null);
+
+  // sp가 있으면 마지막 위치 저장
+  useEffect(() => {
+    if (sp) lastSpotlightRef.current = sp;
+  }, [sp]);
 
   // 메시지 변경 시 fade out → 교체 → fade in
   useEffect(() => {
@@ -241,11 +247,11 @@ export function DemoOverlay({ demoState, onStop, speed, onSpeedChange }: { demoS
     return () => clearTimeout(t);
   }, [message, messagePosition]);
 
-  // spotlight 위치 (없으면 화면 밖으로)
-  // 작은 요소(버튼)은 borderRadius를 작게, 큰 영역(패널)은 크게
-  const spRadius = sp ? Math.min(14, Math.min(sp.width, sp.height) / 3) : 0;
-  const spStyle: React.CSSProperties = sp
-    ? { top: sp.top, left: sp.left, width: sp.width, height: sp.height, borderRadius: spRadius }
+  // spotlight 위치: sp가 없으면 마지막 위치 유지 (중앙 축소 방지)
+  const activeSp = sp || lastSpotlightRef.current;
+  const spRadius = activeSp ? Math.min(14, Math.min(activeSp.width, activeSp.height) / 3) : 0;
+  const spStyle: React.CSSProperties = activeSp
+    ? { top: activeSp.top, left: activeSp.left, width: activeSp.width, height: activeSp.height, borderRadius: spRadius }
     : { top: "50%", left: "50%", width: 0, height: 0, borderRadius: "50%" };
 
   // 메시지 위치
@@ -277,9 +283,9 @@ export function DemoOverlay({ demoState, onStop, speed, onSpeedChange }: { demoS
       />
 
       {/* spotlight 테두리 */}
-      {sp && (
+      {activeSp && (
         <div style={{
-          position: "absolute", top: sp.top, left: sp.left, width: sp.width, height: sp.height,
+          position: "absolute", top: activeSp.top, left: activeSp.left, width: activeSp.width, height: activeSp.height,
           borderRadius: spRadius,
           border: "2px solid rgba(255,255,255,0.35)",
           pointerEvents: "none",

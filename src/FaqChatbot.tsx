@@ -10,6 +10,7 @@ interface ChatMsg {
 }
 
 const BOT_AVATAR = "/images/j-avatar.png";
+const isMobile = /Android|iPhone|iPad|iPod|Mobile|Fold|Flip/i.test(navigator.userAgent);
 
 export function FaqChatbot({ hidden }: { hidden?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,7 +90,7 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
       background: "none", border: "none", borderBottom: "1px solid var(--border-secondary, #f3f4f6)",
       cursor: "pointer", fontFamily: "inherit", textAlign: "left" as const, transition: "background 0.1s",
     }}>
-      <span style={{ fontSize: 14, color: "var(--text-primary)", lineHeight: 1.5 }}>{highlightMatch(faq.question, searchQuery)}</span>
+      <span style={{ fontSize: isMobile ? 16 : 14, color: "var(--text-primary)", lineHeight: 1.5 }}>{highlightMatch(faq.question, searchQuery)}</span>
       <ArrowRight size={14} color="var(--text-quaternary, #d1d5db)" style={{ flexShrink: 0, marginLeft: 8 }} />
     </button>
   );
@@ -180,7 +181,7 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
               filteredFaqs.length > 0 ? (
                 <div>{filteredFaqs.map(faq => <QItem key={faq.id} faq={faq} />)}</div>
               ) : (
-                <div style={{ padding: 48, textAlign: "center" as const, color: "var(--text-tertiary)", fontSize: 14 }}>
+                <div style={{ padding: 48, textAlign: "center" as const, color: "var(--text-tertiary)", fontSize: isMobile ? 16 : 14 }}>
                   검색 결과가 없습니다
                 </div>
               )
@@ -207,7 +208,7 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
                       <img src={BOT_AVATAR} alt="J" style={{ width: "130%", height: "auto", marginTop: "10%" }} />
                     </div>
                     <div>
-                      <div style={{ padding: "10px 14px", borderRadius: "16px 16px 16px 4px", background: "#f4f4f5", fontSize: 14, color: "var(--text-primary)", lineHeight: 1.5, marginBottom: 10 }}>
+                      <div style={{ padding: "10px 14px", borderRadius: "16px 16px 16px 4px", background: "#f4f4f5", fontSize: isMobile ? 16 : 14, color: "var(--text-primary)", lineHeight: 1.5, marginBottom: 10 }}>
                         궁금한 내용을 선택해주세요
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6 }}>
@@ -216,7 +217,7 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
                             padding: "7px 14px", borderRadius: 20,
                             border: "1px solid var(--border-primary, #e5e7eb)",
                             background: "#fff", cursor: "pointer",
-                            fontFamily: "inherit", fontSize: 13, fontWeight: 500,
+                            fontFamily: "inherit", fontSize: isMobile ? 15 : 13, fontWeight: 500,
                             color: "var(--text-primary)", transition: "all 0.15s",
                           }}>
                             {cat.label}
@@ -249,7 +250,7 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
                     )}
                     <div style={{
                       maxWidth: "80%", padding: "10px 14px",
-                      fontSize: 14, lineHeight: 1.7, whiteSpace: "pre-line" as const,
+                      fontSize: isMobile ? 16 : 14, lineHeight: 1.7, whiteSpace: "pre-line" as const,
                       ...(msg.type === "user"
                         ? { background: "var(--text-primary, #1e293b)", color: "#fff", borderRadius: "16px 16px 4px 16px" }
                         : { background: "#f4f4f5", color: "var(--text-primary)", borderRadius: "16px 16px 16px 4px" }
@@ -262,11 +263,11 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
 
                 {relatedFaqs.length > 0 && (
                   <div style={{ paddingLeft: 32, paddingTop: 4 }}>
-                    <p style={{ fontSize: 12, color: "var(--text-tertiary)", marginBottom: 8 }}>관련 질문</p>
+                    <p style={{ fontSize: isMobile ? 14 : 12, color: "var(--text-tertiary)", marginBottom: 8 }}>관련 질문</p>
                     <div style={{ display: "flex", flexDirection: "column" as const, gap: 4 }}>
                       {relatedFaqs.map(faq => (
                         <button key={faq.id} onClick={() => selectFaq(faq)} className="faq-related-btn" style={{
-                          padding: "8px 14px", borderRadius: 10, fontSize: 13,
+                          padding: "8px 14px", borderRadius: 10, fontSize: isMobile ? 15 : 13,
                           border: "1px solid var(--border-primary, #e5e7eb)",
                           background: "#fff", color: "var(--text-primary)",
                           cursor: "pointer", fontFamily: "inherit", fontWeight: 500,
@@ -303,7 +304,7 @@ export function FaqChatbot({ hidden }: { hidden?: boolean }) {
                 }}
                 style={{
                   flex: 1, border: "none", background: "transparent", outline: "none",
-                  fontSize: 14, color: "var(--text-primary)", fontFamily: "inherit",
+                  fontSize: isMobile ? 16 : 14, color: "var(--text-primary)", fontFamily: "inherit",
                 }}
               />
               {searchQuery.trim() && (

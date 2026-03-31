@@ -50,6 +50,13 @@ if (isMobileUA) {
     .mobile-device .result-metrics > div { border-right: none !important; border-bottom: 1px solid var(--border-secondary) !important; text-align: left !important; }
     .mobile-device .result-metrics > div:last-child { border-bottom: none !important; }
     .mobile-device .asset-card input.strategy-applied { background: var(--bg-secondary) !important; border-color: var(--border-primary) !important; color: var(--text-primary) !important; }
+    .mobile-device .action-panel { font-size: 15px !important; }
+    .mobile-device .info-box { font-size: 15px !important; line-height: 1.9 !important; padding: 16px 18px !important; word-break: keep-all !important; }
+    .mobile-device .header-panel-open { border-bottom: none !important; box-shadow: none !important; }
+    .mobile-device .accum-pc-row { display: none !important; }
+    .mobile-device .accum-mobile-row { display: flex !important; }
+    .mobile-device .sim-guide-cta { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; z-index: 100 !important; height: 53px !important; border-radius: 0 !important; flex: none !important; font-size: 16px !important; box-shadow: 0 -2px 12px rgba(0,0,0,0.1) !important; }
+    .mobile-device .hero-banner { margin: 0 16px 24px !important; border-radius: 16px !important; box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important; border: 1px solid var(--border-primary) !important; }
     .mobile-device .hero-character { display: none !important; }
     .mobile-device .hero-character-mobile { display: none !important; }
     .mobile-device .hero-title-row { margin-bottom: 10px !important; }

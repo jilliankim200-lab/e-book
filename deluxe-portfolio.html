@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Pretendard Variable', Pretendard, sans-serif; background: #f8fafc; color: #1e293b; }
+
+  .page {
+    width: 800px;
+    margin: 40px auto;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+  }
+
+  /* 헤더 */
+  .header {
+    background: linear-gradient(135deg, #3182F6, #277fd1);
+    padding: 48px 56px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::after {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+  }
+  .header-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 15px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+  }
+
+  /* 콘텐츠 */
+  .content {
+    padding: 48px 56px;
+  }
+
+  .section {
+    margin-bottom: 40px;
+  }
+  .section:last-child { margin-bottom: 0; }
+
+  .section-label {
+    font-size: 12px;
+    color: #3182F6;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 24px;
+  }
+
+  .section-desc {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  /* 요약 카드 */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  .summary-card {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+  .summary-card .label {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 6px;
+  }
+  .summary-card .value {
+    font-size: 22px;
+    font-weight: 900;
+    color: #0f172a;
+  }
+  .summary-card .value.blue { color: #3182F6; }
+  .summary-card .value.green { color: #059669; }
+  .summary-card .value.amber { color: #d97706; }
+
+  /* 테이블 */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: #f1f5f9;
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: #475569;
+    font-size: 13px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  thead th:first-child { border-radius: 8px 0 0 0; }
+  thead th:last-child { border-radius: 0 8px 0 0; }
+  tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+
+  .ticker {
+    font-weight: 700;
+    color: #0f172a;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .tag-blue { background: #eff6ff; color: #3182F6; }
+  .tag-green { background: #ecfdf5; color: #059669; }
+  .tag-amber { background: #fffbeb; color: #d97706; }
+  .tag-purple { background: #f5f3ff; color: #7c3aed; }
+
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+
+  /* 원칙 카드 */
+  .principle-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .principle-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .principle-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .principle-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+  }
+  .principle-card p {
+    font-size: 13px;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  /* 배당 캘린더 */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .calendar-cell {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .calendar-cell .month {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 6px;
+  }
+  .calendar-cell .amount {
+    font-size: 16px;
+    font-weight: 900;
+    color: #059669;
+  }
+  .calendar-cell .items {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+  }
+
+  /* 차트 바 */
+  .bar-chart {
+    margin-top: 16px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 12px;
+  }
+  .bar-label {
+    width: 80px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1;
+    height: 24px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  /* 면책 */
+  .disclaimer {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 32px;
+  }
+  .disclaimer h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 8px;
+  }
+  .disclaimer p {
+    font-size: 12px;
+    color: #94a3b8;
+    line-height: 1.7;
+  }
+
+  /* 푸터 */
+  .footer {
+    background: #f1f5f9;
+    padding: 24px 56px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+  .footer strong { color: #3182F6; }
+
+  /* 편집 안내 */
+  .edit-hint {
+    background: #fffbeb;
+    border: 1px dashed #fbbf24;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #92400e;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="header-badge">DELUXE ONLY</div>
+    <h1>J의 배당주 포트폴리오</h1>
+    <p>은퇴 전 현금흐름을 만드는 배당주 중심 자산 운용 전략</p>
+  </div>
+
+  <div class="content">
+
+    <!-- 편집 안내 (실제 배포 시 삭제) -->
+    <div class="edit-hint">
+      <span class="material-icons-outlined" style="font-size:18px;">edit</span>
+      아래 내용을 본인의 실제 포트폴리오로 수정한 후 배포하세요. 이 안내는 삭제하시면 됩니다.
+    </div>
+
+    <!-- 운용 요약 -->
+    <div class="section">
+      <div class="section-label">OVERVIEW</div>
+      <div class="section-title">포트폴리오 요약</div>
+
+      <div class="summary-cards">
+        <div class="summary-card">
+          <div class="label">총 운용 자산</div>
+          <div class="value">0,000만원</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">연간 배당 수익</div>
+          <div class="value green">000만원</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">평균 배당률</div>
+          <div class="value blue">0.0%</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">종목 수</div>
+          <div class="value amber">00개</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 운용 원칙 -->
+    <div class="section">
+      <div class="section-label">PRINCIPLES</div>
+      <div class="section-title">나의 운용 원칙</div>
+
+      <div class="principle-cards">
+        <div class="principle-card">
+          <div class="principle-icon" style="background:#eff6ff;">
+            <span class="material-icons-outlined" style="color:#3182F6; font-size:20px;">shield</span>
+          </div>
+          <div>
+            <h4>안정성 우선</h4>
+            <p>배당 컷 이력이 없는 종목 위주로 편입합니다.</p>
+          </div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-icon" style="background:#ecfdf5;">
+            <span class="material-icons-outlined" style="color:#059669; font-size:20px;">calendar_month</span>
+          </div>
+          <div>
+            <h4>월 배당 흐름</h4>
+            <p>매월 배당이 들어오도록 지급월을 분산합니다.</p>
+          </div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-icon" style="background:#fffbeb;">
+            <span class="material-icons-outlined" style="color:#d97706; font-size:20px;">balance</span>
+          </div>
+          <div>
+            <h4>분산 투자</h4>
+            <p>국내/해외, 섹터별로 분산하여 리스크를 줄입니다.</p>
+          </div>
+        </div>
+        <div class="principle-card">
+          <div class="principle-icon" style="background:#f5f3ff;">
+            <span class="material-icons-outlined" style="color:#7c3aed; font-size:20px;">trending_up</span>
+          </div>
+          <div>
+            <h4>배당 성장</h4>
+            <p>배당금이 매년 증가하는 종목을 선호합니다.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 자산 배분 -->
+    <div class="section">
+      <div class="section-label">ALLOCATION</div>
+      <div class="section-title">자산 배분 비중</div>
+
+      <div class="bar-chart">
+        <div class="bar-row">
+          <div class="bar-label">국내 배당주</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:40%; background:#3182F6;">40%</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">해외 배당 ETF</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:30%; background:#059669;">30%</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">리츠(REITs)</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:15%; background:#d97706;">15%</div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">채권/현금</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:15%; background:#94a3b8;">15%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 종목 리스트 -->
+    <div class="section">
+      <div class="section-label">HOLDINGS</div>
+      <div class="section-title">보유 종목 상세</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>종목명</th>
+            <th>유형</th>
+            <th>비중</th>
+            <th>배당률</th>
+            <th>배당월</th>
+            <th>편입 사유</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ticker">(종목명 입력)</td>
+            <td><span class="tag tag-blue">국내 주식</span></td>
+            <td class="text-center">00%</td>
+            <td class="text-center">0.0%</td>
+            <td class="text-center">3, 6, 9, 12월</td>
+            <td>(사유 입력)</td>
+          </tr>
+          <tr>
+            <td class="ticker">(종목명 입력)</td>
+            <td><span class="tag tag-green">해외 ETF</span></td>
+            <td class="text-center">00%</td>
+            <td class="text-center">0.0%</td>
+            <td class="text-center">매월</td>
+            <td>(사유 입력)</td>
+          </tr>
+          <tr>
+            <td class="ticker">(종목명 입력)</td>
+            <td><span class="tag tag-amber">리츠</span></td>
+            <td class="text-center">00%</td>
+            <td class="text-center">0.0%</td>
+            <td class="text-center">1, 4, 7, 10월</td>
+            <td>(사유 입력)</td>
+          </tr>
+          <tr>
+            <td class="ticker">(종목명 입력)</td>
+            <td><span class="tag tag-blue">국내 주식</span></td>
+            <td class="text-center">00%</td>
+            <td class="text-center">0.0%</td>
+            <td class="text-center">6, 12월</td>
+            <td>(사유 입력)</td>
+          </tr>
+          <tr>
+            <td class="ticker">(종목명 입력)</td>
+            <td><span class="tag tag-green">해외 ETF</span></td>
+            <td class="text-center">00%</td>
+            <td class="text-center">0.0%</td>
+            <td class="text-center">매월</td>
+            <td>(사유 입력)</td>
+          </tr>
+          <tr>
+            <td class="ticker">(종목명 입력)</td>
+            <td><span class="tag tag-purple">채권 ETF</span></td>
+            <td class="text-center">00%</td>
+            <td class="text-center">0.0%</td>
+            <td class="text-center">매월</td>
+            <td>(사유 입력)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 월별 배당 캘린더 -->
+    <div class="section">
+      <div class="section-label">DIVIDEND CALENDAR</div>
+      <div class="section-title">월별 예상 배당 수령액</div>
+
+      <div class="calendar-grid">
+        <div class="calendar-cell"><div class="month">1월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">2월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">3월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">4월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">5월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">6월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">7월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">8월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">9월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">10월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">11월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+        <div class="calendar-cell"><div class="month">12월</div><div class="amount">0만원</div><div class="items">(종목명)</div></div>
+      </div>
+    </div>
+
+    <!-- 면책 -->
+    <div class="disclaimer">
+      <h4>유의사항</h4>
+      <p>
+        본 포트폴리오는 개인적인 투자 기록이며, 투자 권유나 종목 추천이 아닙니다.
+        투자에 따른 모든 책임은 투자자 본인에게 있으며, 과거 수익률이 미래 수익을 보장하지 않습니다.
+        본 자료는 DELUXE 구매자에게만 제공되며, 무단 배포 및 공유를 금합니다.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- 푸터 -->
+  <div class="footer">
+    <span>탈출 조력자 <strong>J</strong> | POWER J's Escape Route Planner</span>
+    <span>DELUXE 전용 자료</span>
+  </div>
+</div>
+
+</body>
+</html>

@@ -124,6 +124,44 @@ interface Scenario {
 
 const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile|Fold|Flip/i.test(navigator.userAgent);
 
+// 스켈레톤 컴포넌트
+function ActionPlanSkeleton() {
+  const shimmer = {
+    background: 'linear-gradient(90deg, var(--bg-secondary) 25%, var(--border-secondary) 50%, var(--bg-secondary) 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.5s infinite',
+    borderRadius: 8,
+  } as React.CSSProperties;
+
+  return (
+    <div style={{ padding: 20 }}>
+      <style>{`@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+      {/* 히어로 배너 스켈레톤 */}
+      <div style={{ ...shimmer, height: 160, borderRadius: 16, marginBottom: 20 }} />
+      {/* 지표 스켈레톤 */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
+        <div style={{ ...shimmer, flex: 1, height: 72, borderRadius: 12 }} />
+        <div style={{ ...shimmer, flex: 1, height: 72, borderRadius: 12 }} />
+      </div>
+      {/* 전략 카드 스켈레톤 */}
+      <div style={{ ...shimmer, height: 20, width: '40%', marginBottom: 16 }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ ...shimmer, height: 64, borderRadius: 12 }} />
+        <div style={{ ...shimmer, height: 64, borderRadius: 12 }} />
+        <div style={{ ...shimmer, height: 64, borderRadius: 12 }} />
+      </div>
+      {/* 계좌 스켈레톤 */}
+      <div style={{ ...shimmer, height: 20, width: '50%', marginTop: 28, marginBottom: 16 }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ ...shimmer, height: 52, borderRadius: 10 }} />
+        <div style={{ ...shimmer, height: 52, borderRadius: 10 }} />
+        <div style={{ ...shimmer, height: 52, borderRadius: 10 }} />
+        <div style={{ ...shimmer, height: 52, borderRadius: 10 }} />
+      </div>
+    </div>
+  );
+}
+
 export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyStrategies, onRecalculate, inputs: planInputs, originalInputs, onClose }: ActionPlanProps) {
   const [expandedScenario, setExpandedScenario] = useState<string | null>(null);
   const [applyMode, setApplyMode] = useState(false);
@@ -131,18 +169,30 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
   const [showDevNote, setShowDevNote] = useState(false);
   const [filledAccounts, setFilledAccounts] = useState<Record<string, number>>({});
   const [dragAmounts, setDragAmounts] = useState<Record<string, number>>({});
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const skeletonTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // phase: 0=초기(아무것도 안 보임), 1=즉시탈출 직후(앞당기기+채우기+여유 모두 표시), 2=재계산 후(채우기만), 3=채우기 재계산 후(모두 숨김)
   const [solutionPhase, setSolutionPhase] = useState(0);
   const prevResultsRef = useRef(results);
+
+  // 최초 마운트 + 결과 변경 시 스켈레톤
   useEffect(() => {
-    if (prevResultsRef.current !== results && solutionPhase === 1) {
-      setSolutionPhase(2);
-    }
-    if (prevResultsRef.current !== results) {
+    const changed = prevResultsRef.current !== results;
+
+    if (changed) {
+      if (solutionPhase === 1) setSolutionPhase(2);
       const panel = document.querySelector('.action-panel');
       if (panel) panel.scrollTop = 0;
+      prevResultsRef.current = results;
     }
-    prevResultsRef.current = results;
+
+    // 스켈레톤 시작
+    setShowSkeleton(true);
+    if (skeletonTimerRef.current) clearTimeout(skeletonTimerRef.current);
+    const duration = 3000 + Math.random() * 2000; // 3~5초
+    skeletonTimerRef.current = setTimeout(() => setShowSkeleton(false), duration);
+
+    return () => { if (skeletonTimerRef.current) clearTimeout(skeletonTimerRef.current); };
   }, [results]);
 
   const formatAmount = (amount: number): string => {
@@ -587,6 +637,8 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
     );
   }
 
+  if (showSkeleton) return <ActionPlanSkeleton />;
+
   return (
     <div>
       {/* 모바일 뒤로가기 버튼 */}
@@ -603,7 +655,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       )}
 
       {/* 시뮬레이션 결과 히어로 배너 */}
-      <div style={{
+      <div className="hero-banner" style={{
         marginBottom: 24,
         background: "var(--bg-primary)",
         overflow: "hidden",
@@ -722,8 +774,8 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               borderRight: isMobileDevice ? "none" : "1px solid var(--border-secondary)",
               borderBottom: isMobileDevice ? "1px solid var(--border-secondary)" : "none",
             }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginBottom: 4 }}>{isFireSuccess ? `${planInputs?.simulationEndAge ?? 90}세까지 남는 금액` : <>{`월 ${formatAmount(planInputs?.monthlyLivingCostBefore75 ?? 0)}원 기준,`}<br />{`${planInputs?.simulationEndAge ?? 90}세까지 부족한 모든 금액`}</>}</div>
-              <div className="toss-number" style={{ fontSize: 17, fontWeight: 800, color: isFireSuccess ? "var(--color-success)" : "var(--color-error)" }}>
+              <div style={{ fontSize: isMobileDevice ? 15 : 13, fontWeight: isMobileDevice ? 600 : 500, color: isMobileDevice ? "var(--text-secondary)" : "var(--text-tertiary)", marginBottom: 4 }}>{isFireSuccess ? `${planInputs?.simulationEndAge ?? 90}세까지 남는 금액` : <>{`월 ${formatAmount(planInputs?.monthlyLivingCostBefore75 ?? 0)}원 기준,`}<br />{`${planInputs?.simulationEndAge ?? 90}세까지 부족한 모든 금액`}</>}</div>
+              <div className="toss-number" style={{ fontSize: isMobileDevice ? 20 : 17, fontWeight: 800, color: isFireSuccess ? "var(--color-success)" : "var(--color-error)" }}>
                 {formatKorean(Math.abs(analysis.totalSurplus))}
               </div>
             </div>
@@ -731,8 +783,8 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               padding: "16px 12px",
               textAlign: isMobileDevice ? "left" as const : "center" as const,
             }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginBottom: 4 }}>가장 어려운 시점</div>
-              <div style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)" }}>
+              <div style={{ fontSize: isMobileDevice ? 15 : 13, fontWeight: isMobileDevice ? 600 : 500, color: isMobileDevice ? "var(--text-secondary)" : "var(--text-tertiary)", marginBottom: 4 }}>가장 어려운 시점</div>
+              <div style={{ fontSize: isMobileDevice ? 20 : 17, fontWeight: 800, color: "var(--text-primary)" }}>
                 {analysis.minSurplusRow.age}세 ({formatKorean(analysis.minSurplusRow.yearlySurplus)})
               </div>
             </div>
@@ -869,7 +921,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
               setFilledAccounts({});
               onApplyStrategies?.(allChanges, true);
             }}
-            style={{ padding: "10px 24px", fontSize: 14, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", gap: 5 }}
+            style={{ padding: "10px 24px", height: 53, fontSize: 14, fontWeight: 700, color: "#fff", background: "#00b1bb", border: "none", borderRadius: 8, cursor: "pointer", whiteSpace: "nowrap" as const, flexShrink: 0, boxShadow: "0 2px 8px rgba(0,177,187,0.3)", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, width: "100%" }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> 탈출을 성공하려면?
           </button>
@@ -879,10 +931,10 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
       {/* 계좌별 목표 잔액 (실패 시 표시) */}
       {!isFireSuccess && analysis && analysis.accountTargets && (
         <div style={{ margin: "32px 16px 12px", padding: 16, borderRadius: 12, background: "var(--bg-primary)", border: "1px solid var(--border-primary)", borderTop: "3px solid var(--border-primary)" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
+          <div style={{ fontSize: isMobileDevice ? 17 : 15, fontWeight: 700, color: "var(--text-primary)", marginBottom: 4 }}>
             은퇴 전까지 최선을 다해서 채워볼까요?
           </div>
-          <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", margin: "0 0 12px" }}>
+          <p style={{ fontSize: isMobileDevice ? 14 : 13, fontWeight: 500, color: isMobileDevice ? "var(--text-secondary)" : "var(--text-tertiary)", margin: "0 0 12px" }}>
             {planInputs?.retirementStartAge ?? 55}세까지 각 계좌에 이만큼 있으면, {planInputs?.simulationEndAge ?? 90}세까지 버틸 수 있어요.
           </p>
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
@@ -905,7 +957,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                       <>
                         {/* 헤더: 라벨 + 채우기 */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{account.label}</span>
+                          <span style={{ fontSize: isMobileDevice ? 16 : 14, fontWeight: 700, color: "var(--text-primary)" }}>{account.label}</span>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             {isFilled ? (
                               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -939,7 +991,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                               </div>
                             ) : isEnough ? (
                               <span style={{ fontSize: 12, fontWeight: 600, color: "#00b1bb" }}>달성 ✓</span>
-                            ) : (
+                            ) : (key === 'isa' && account.current >= 100000000) ? null : (
                               <button
                                 onClick={() => {
                                   const amount = gap;
@@ -991,9 +1043,9 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                           }} />
                         </div>
                         {/* 금액 라벨 */}
-                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 12, fontWeight: 500 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: isMobileDevice ? 14 : 12, fontWeight: isMobileDevice ? 600 : 500 }}>
                           <span style={{ color: barColor }}>{formatKorean(adjustedCurrent)}</span>
-                          <span style={{ color: "var(--text-tertiary)" }}>{formatKorean(account.target)}</span>
+                          <span style={{ color: isMobileDevice ? "var(--text-secondary)" : "var(--text-tertiary)" }}>{formatKorean(account.target)}</span>
                         </div>
                       </>
                     );
@@ -1089,7 +1141,7 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 </div>
                 <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: expandedScenario === scenario.id ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}><path d="M3 4.5L6 7.5L9 4.5" stroke="var(--text-tertiary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "var(--text-tertiary)", marginTop: 2, lineHeight: 1.6, wordBreak: "keep-all" as const, paddingLeft: isMobileDevice ? 0 : 38 }}>
+              <div style={{ fontSize: isMobileDevice ? 15 : 13, fontWeight: 500, color: isMobileDevice ? "var(--text-secondary)" : "var(--text-tertiary)", marginTop: 2, lineHeight: 1.6, wordBreak: "keep-all" as const, paddingLeft: isMobileDevice ? 0 : 38 }}>
                 {scenario.description}
               </div>
             </div>
@@ -1100,14 +1152,14 @@ export function ActionPlan({ results, isFireSuccess, assetDepletionAge, onApplyS
                 {/* 실행 팁 */}
                 {scenario.actionTip && (
                   <div style={{ marginTop: 8, padding: "10px 14px", borderRadius: 8, border: "1px dashed var(--border-primary)", lineHeight: 1.7 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-profit)", marginBottom: 4 }}>실행 팁</div>
-                    <div style={{ fontSize: 13, color: "var(--text-secondary)", margin: 0, wordBreak: "keep-all" as const }}>{scenario.actionTip!.split(/\n|(?=\d+\.\s)/).filter(Boolean).map((line, i) => <p key={i} style={{ margin: '0 0 4px' }}>{line.trim()}</p>)}</div>
+                    <div style={{ fontSize: isMobileDevice ? 15 : 13, fontWeight: 700, color: "var(--color-profit)", marginBottom: 4 }}>실행 팁</div>
+                    <div style={{ fontSize: isMobileDevice ? 15 : 13, color: isMobileDevice ? "var(--text-primary)" : "var(--text-secondary)", margin: 0, wordBreak: "keep-all" as const }}>{scenario.actionTip!.split(/\n|(?=\d+\.\s)/).filter(Boolean).map((line, i) => <p key={i} style={{ margin: '0 0 4px' }}>{line.trim()}</p>)}</div>
                   </div>
                 )}
                 {/* 상세 정보 */}
                 <div style={{ paddingTop: 10 }}>
                   {scenario.details.map((detail, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "6px 0", paddingLeft: 12, fontSize: 13, color: "var(--text-primary)", lineHeight: 1.5, borderBottom: i < scenario.details.length - 1 ? "1px solid var(--border-secondary)" : "none" }}>
+                    <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "6px 0", paddingLeft: 12, fontSize: isMobileDevice ? 15 : 13, color: "var(--text-primary)", lineHeight: 1.5, borderBottom: i < scenario.details.length - 1 ? "1px solid var(--border-secondary)" : "none" }}>
                       {scenario.details.length > 1 && <span style={{ color: "var(--accent-blue)", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>}
                       <span>{detail}</span>
                     </div>

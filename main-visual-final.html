@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 20px; font-family: sans-serif; }
+  canvas { border: 1px solid #333; }
+  .btn { padding: 12px 32px; font-size: 16px; background: #3182F6; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; }
+  .btn:hover { background: #277fd1; }
+  .info { color: #888; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<canvas id="canvas" width="652" height="488"></canvas>
+<button class="btn" onclick="download()">PNG 다운로드</button>
+<div class="info">652 x 488px</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = 652, H = 488;
+
+const charImg = new Image();
+charImg.src = 'public/images/login-character.png';
+charImg.onload = () => draw();
+setTimeout(() => draw(), 500);
+
+function draw() {
+  // 배경 - 로그인 페이지 컬러
+  const bgGrad = ctx.createLinearGradient(0, 0, W * 0.6, H);
+  bgGrad.addColorStop(0, '#3182F6');
+  bgGrad.addColorStop(1, '#277fd1');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 미묘한 원형 글로우
+  const glow1 = ctx.createRadialGradient(W * 0.3, H * 0.3, 0, W * 0.3, H * 0.3, 300);
+  glow1.addColorStop(0, 'rgba(255,255,255,0.06)');
+  glow1.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow1;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow2 = ctx.createRadialGradient(W * 0.8, H * 0.7, 0, W * 0.8, H * 0.7, 250);
+  glow2.addColorStop(0, 'rgba(0,0,0,0.1)');
+  glow2.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow2;
+  ctx.fillRect(0, 0, W, H);
+
+  // 캐릭터 이미지 (좌측)
+  if (charImg.complete && charImg.naturalWidth > 0) {
+    const ch = 340;
+    const cw = ch * (charImg.naturalWidth / charImg.naturalHeight);
+    const cx = 20;
+    const cy = H - ch - 40;
+
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 15;
+    ctx.drawImage(charImg, cx, cy, cw, ch);
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    // 하단 페이드
+    const fade = ctx.createLinearGradient(0, H - 40, 0, H);
+    fade.addColorStop(0, 'rgba(39,127,209,0)');
+    fade.addColorStop(1, 'rgba(39,127,209,0.8)');
+    ctx.fillStyle = fade;
+    ctx.fillRect(cx, H - 40, cw, 40);
+  }
+
+  // 오른쪽 텍스트 영역
+  const rx = 300;
+
+  // 은퇴 시뮬레이션 라벨
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = '400 12px "Noto Sans KR", sans-serif';
+  ctx.fillText('은퇴 시뮬레이션 프로그램', rx, 56);
+
+  // 메인 타이틀
+  ctx.font = '900 42px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('탈출지도', rx, 104);
+
+  // 서브 카피
+  ctx.font = '900 34px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText('본인의 숫자를 넣고', rx, 148);
+  ctx.fillText('현실을 보고', rx, 188);
+  ctx.fillText('계획을 세워라.', rx, 228);
+
+  // 플로우: 입력 — 진단 — 전략 (미니멀 라인)
+  const fy = 280;
+  const labels = ['입력', '진단', '전략'];
+  const colors = ['#ffffff', '#fde68a', '#6ee7b7'];
+
+  // 얇은 가로선 (rx 기준 정렬)
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.lineWidth = 1;
+  const flowX = rx + 15;
+  ctx.beginPath();
+  ctx.moveTo(flowX, fy);
+  ctx.lineTo(flowX + 210, fy);
+  ctx.stroke();
+
+  // 3개 포인트
+  labels.forEach((label, i) => {
+    const px = flowX + i * 105;
+
+    // 작은 원
+    ctx.beginPath();
+    ctx.arc(px, fy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+
+    // 텍스트 (원 중앙 정렬)
+    ctx.font = '600 13px "Noto Sans KR", sans-serif';
+    ctx.fillStyle = colors[i];
+    ctx.textAlign = 'center';
+    ctx.fillText(label, px, fy + 20);
+    ctx.textAlign = 'left';
+  });
+
+  // 태그들 (rx 기준 정렬)
+  const tags = ['3층 연금', '세금·건보료', '현금흐름', '4가지 전략'];
+  let tx = rx;
+  const ty = 336;
+  ctx.font = '400 11px "Noto Sans KR", sans-serif';
+  tags.forEach(tag => {
+    const tw = ctx.measureText(tag).width + 20;
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    roundRect(ctx, tx, ty, tw, 26, 5);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, tx, ty, tw, 26, 5);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillText(tag, tx + 10, ty + 17);
+    tx += tw + 6;
+  });
+
+  // 하단 슬로건 (rx 기준 정렬)
+  const sy = 400;
+  ctx.font = '400 14px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  const s1 = '막연한 불안 대신, ';
+  ctx.fillText(s1, rx, sy);
+  const s1w = ctx.measureText(s1).width;
+
+  ctx.font = '700 14px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  const s2 = '숫자로 확신';
+  ctx.fillText(s2, rx + s1w, sy);
+  const s2w = ctx.measureText(s2).width;
+
+  ctx.font = '400 14px "Noto Sans KR", sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillText('을 드립니다', rx + s1w + s2w, sy);
+}
+
+function drawDot(ctx, x, y, color, glowColor) {
+  ctx.beginPath();
+  ctx.arc(x + 4, y, 8, 0, Math.PI * 2);
+  ctx.fillStyle = glowColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + 4, y, 4, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function download() {
+  const link = document.createElement('a');
+  link.download = 'escape-map-visual-652x488.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+</script>
+</body>
+</html>

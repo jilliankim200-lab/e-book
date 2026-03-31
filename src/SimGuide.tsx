@@ -60,7 +60,7 @@ const MdTable = ({ headers, rows }: { headers: string[]; rows: string[][] }) => 
 
 const InfoBox = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div style={{ margin: "12px 0", padding: "14px 16px", borderRadius: 10, background: "hsl(169.44deg 100% 50% / 10%)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1.7 }}>
+    <div className="info-box" style={{ margin: "12px 0", padding: "14px 16px", borderRadius: 10, background: "hsl(169.44deg 100% 50% / 10%)", fontSize: 13, color: "var(--text-primary)", lineHeight: 1.7 }}>
       {children}
     </div>
   );
@@ -587,6 +587,7 @@ export function SimGuide({ onNavigate }: SimGuideProps) {
           </button>
         ) : (
           <button
+            className="sim-guide-cta"
             onClick={() => onNavigate?.("retirement-calc")}
             style={{
               flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
@@ -595,6 +596,7 @@ export function SimGuide({ onNavigate }: SimGuideProps) {
               fontSize: 14, fontWeight: 600, cursor: "pointer",
               fontFamily: "inherit", transition: "all 0.15s",
               boxShadow: "0 2px 12px rgba(49, 130, 246, 0.3)",
+              whiteSpace: "nowrap",
             }}
           >
             <Calculator size={16} /> 탈출지도 바로가기

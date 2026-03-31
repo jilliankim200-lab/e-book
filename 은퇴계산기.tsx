@@ -1133,6 +1133,17 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     setResults(rows);
     setShowResults(true);
 
+    // 성공 시 입력 폼 상단으로, 실패 시 결과 테이블로 스크롤
+    setTimeout(() => {
+      if (fireSuccess) {
+        const scrollContainer = document.querySelector('.auto-hide-scrollbar');
+        if (scrollContainer) scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        const el = document.querySelector('.result-table-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
+
     // 토스트 메시지 표시
     showToast('계산이 완료되었습니다');
 
@@ -1170,7 +1181,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
     pensionReturnRate: 0.05,
     pensionExcessTaxRate: 0.15,
     pensionStartAge: 55,
-    usePensionDepletion: false,
+    usePensionDepletion: true,
     husbandISA: 0, wifeISA: 0, isaReturnRate: 0.05,
     overseasInvestmentAmount: 0, overseasReturnRate: 0.07,
     savingsAmount: 0, savingsReturnRate: 0.03,
@@ -2045,23 +2056,44 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                   </>
                   ) : (
                   <>
-                    <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                    {/* PC: 한 줄 레이아웃 */}
+                    <div className="sim-input-row accum-pc-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
                       <button className="btn-delete" onClick={removePP} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-tertiary, #aaa)" /></button>
                       <select value={pp.type} onChange={(e) => updatePP('type', e.target.value)}
                         className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
                         <option value="pension_savings">연금저축</option>
                         <option value="irp">IRP</option>
                       </select>
-                      <span className="mobile-hide-label" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
+                      <input type="text" value={formatInputAmount(pp.currentBalance || 0)} onChange={(e) => updatePP('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
+                        style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, marginLeft: 8 }}>연 납입액</span>
+                      <input type="text" value={formatInputAmount(pp.yearlyContribution || 0)} onChange={(e) => updatePP('yearlyContribution', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
+                        style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, marginLeft: 8 }}>수익률(%)</span>
+                      <input type="text" value={(pp.returnRate * 100).toFixed(1)} onChange={(e) => updatePP('returnRate', (parseFloat(e.target.value) || 0) / 100)}
+                        style={{ width: 70, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                    </div>
+                    {/* 모바일: 각 필드 별도 행 */}
+                    <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                      <button className="btn-delete" onClick={removePP} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-tertiary, #aaa)" /></button>
+                      <select value={pp.type} onChange={(e) => updatePP('type', e.target.value)}
+                        className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
+                        <option value="pension_savings">연금저축</option>
+                        <option value="pension_insurance">연금보험</option>
+                      </select>
+                    </div>
+                    <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
                       <input type="text" value={formatInputAmount(pp.currentBalance || 0)} onChange={(e) => updatePP('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
                         style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                     </div>
-                    <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                    <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 6, padding: '4px 0' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>연 납입액</span>
                       <input type="text" value={formatInputAmount(pp.yearlyContribution || 0)} onChange={(e) => updatePP('yearlyContribution', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
                         style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                     </div>
-                    <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                    <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 6, padding: '4px 0' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>수익률(%)</span>
                       <input type="text" value={(pp.returnRate * 100).toFixed(1)} onChange={(e) => updatePP('returnRate', (parseFloat(e.target.value) || 0) / 100)}
                         style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
@@ -2069,7 +2101,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                     <div style={{ width: '100%', padding: '6px 10px', marginTop: 4, borderRadius: 6, background: 'rgba(16, 185, 129, 0.06)', fontSize: 12, color: '#0b9936', lineHeight: 1.4 }}>
                       {yearsToRetire > 0
                         ? <>{inputs.retirementStartAge}세 예상 잔액: <strong>{calcPPAccumulated().toLocaleString()}원</strong> <span style={{ color: 'var(--text-tertiary)' }}>({yearsToRetire}년간 적립)</span></>
-                        : '현재 나이와 은퇴 나이를 확인해주세요'}
+                        : '현재 나이보다 은퇴 나이가 커야 적립 계산이 가능해요'}
                     </div>
                   </>
                   )}
@@ -2221,22 +2253,43 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                   {/* === 적립식 모드 === */}
                   {useAccumulate && (
                   <>
-                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                  {/* PC: 한 줄 레이아웃 */}
+                  <div className="sim-input-row accum-pc-row" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0' }}>
                     <button className="btn-delete" onClick={removeAsset} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-tertiary, #aaa)" /></button>
                     <select value={asset.type} onChange={(e) => updateAsset('type', e.target.value)}
                       className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
                       {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value} disabled={usedSingleTypes.includes(opt.value as AssetType)}>{opt.label}{usedSingleTypes.includes(opt.value as AssetType) ? ' (1인1계좌)' : ''}</option>)}
                     </select>
-                    <span className="mobile-hide-label" style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
+                    <input type="text" value={formatInputAmount(asset.currentBalance || 0)} onChange={(e) => updateAsset('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
+                      style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, marginLeft: 8 }}>연 납입액</span>
+                    <input type="text" value={formatInputAmount(asset.yearlyContribution || 0)} onChange={(e) => updateAsset('yearlyContribution', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
+                      style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const, marginLeft: 8 }}>수익률(%)</span>
+                    {strategyBadge(`asset_${asset.type}_returnRate`)}
+                    <input type="text" value={(asset.returnRate * 100).toFixed(1)} onChange={(e) => updateAsset('returnRate', (parseFloat(e.target.value) || 0) / 100)}
+                      style={{ width: 70, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                  </div>
+                  {/* 모바일: 각 필드 별도 행 */}
+                  <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 8, padding: '4px 0' }}>
+                    <button className="btn-delete" onClick={removeAsset} style={{ width: 32, height: 32, border: 'none', background: 'transparent', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 }}><Trash2 size={14} color="var(--text-tertiary, #aaa)" /></button>
+                    <select value={asset.type} onChange={(e) => updateAsset('type', e.target.value)}
+                      className="blue-select" style={{ padding: '4px 10px', fontSize: 11, fontWeight: 700, borderRadius: 6, border: 'none', background: '#4b5563', color: '#fff', cursor: 'pointer' }}>
+                      {ASSET_TYPE_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>현재 잔액</span>
                     <input type="text" value={formatInputAmount(asset.currentBalance || 0)} onChange={(e) => updateAsset('currentBalance', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
                       style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                   </div>
-                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                  <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 6, padding: '4px 0' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>연 납입액</span>
                     <input type="text" value={formatInputAmount(asset.yearlyContribution || 0)} onChange={(e) => updateAsset('yearlyContribution', parseInt(e.target.value.replace(/,/g, ''), 10) || 0)}
                       style={{ width: 120, textAlign: 'right' as const, padding: '5px 8px', fontSize: 13, border: '1px solid var(--border-primary)', borderRadius: 6, background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                   </div>
-                  <div className="sim-input-row" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+                  <div className="sim-input-row accum-mobile-row" style={{ display: 'none', alignItems: 'center', gap: 6, padding: '4px 0' }}>
                     <span style={{ fontSize: 13, color: 'var(--text-secondary)', whiteSpace: 'nowrap' as const }}>수익률(%)</span>
                     {strategyBadge(`asset_${asset.type}_returnRate`)}
                     <input type="text" value={(asset.returnRate * 100).toFixed(1)} onChange={(e) => updateAsset('returnRate', (parseFloat(e.target.value) || 0) / 100)}
@@ -2245,7 +2298,7 @@ export function CashFlow({ isAmountHidden = false, onSimulationComplete, pending
                   <div style={{ width: '100%', padding: '6px 10px', marginTop: 4, borderRadius: 6, background: 'rgba(16, 185, 129, 0.06)', fontSize: 12, color: '#0b9936', lineHeight: 1.4 }}>
                     {yearsToRetire > 0
                       ? <>{inputs.retirementStartAge}세 예상 잔액: <strong>{calcAccumulatedBalance().toLocaleString()}원</strong> <span style={{ color: 'var(--text-tertiary)' }}>({yearsToRetire}년간 적립)</span></>
-                      : '현재 나이와 은퇴 나이를 확인해주세요'}
+                      : '현재 나이보다 은퇴 나이가 커야 적립 계산이 가능해요'}
                   </div>
                   </>
                   )}
